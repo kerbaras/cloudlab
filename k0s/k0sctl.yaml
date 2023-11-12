@@ -1,0 +1,28 @@
+apiVersion: k0sctl.k0sproject.io/v1beta1
+kind: Cluster
+metadata:
+  name: dedicated
+spec:
+  hosts:
+  - role: "controller+worker"
+    installFlags:
+      - --no-taints
+    ssh:
+      address: dedicated.kerbaras.com
+      user: root
+      port: 22
+      keyPath: ~/.ssh/id_ed25519
+  k0s:
+    version: v1.28.3+k0s.0
+    dynamicConfig: false
+    config: 
+      apiVersion: k0s.k0sproject.io/v1beta1
+      kind: Cluster
+      metadata:
+        name: dedicated
+      spec:
+        api:
+          externalAddress: dedicated.kerbaras.com
+          extraArgs: {}
+          sans:
+            - dedicated.kerbaras.com
