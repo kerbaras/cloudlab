@@ -15,8 +15,8 @@ theme: dark
 colors:
   light:
     highlight-primary: "#1e1e2e"
-    highlight-secondary: "#181825"
-    highlight-hover: "#181825"
+    highlight-secondary: "#ccd0da"
+    highlight-hover: "#ccd0da"
     background: "#eff1f5"
     card-background: "#ccd0da"
     text: "#4c4f69"
@@ -28,8 +28,8 @@ colors:
     link-hover: "#40a02b"
   dark:
     highlight-primary: "#1e1e2e"
-    highlight-secondary: "#181825"
-    highlight-hover: "#181825"
+    highlight-secondary: "#313244"
+    highlight-hover: "#313244"
     background: "#1e1e2e"
     card-background: "#313244"
     text: "#cdd6f4"
