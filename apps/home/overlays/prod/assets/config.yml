@@ -17,11 +17,11 @@ colors:
     card-background: "#ccd0da"
     text: "#4c4f69"
     text-header: "#4c4f69"
-    text-title: "#8839ef"
-    text-subtitle: "#ea76cb"
+    text-title: "#4c4f69"
+    text-subtitle: "#8839ef"
     card-shadow: "rgba(0, 0, 0, 0.1)"
-    link: "#179299"
-    link-hover: "#40a02b"
+    link: "#8839ef"
+    link-hover: "#8839ef"
   dark:
     highlight-primary: "#1e1e2e"
     highlight-secondary: "#313244"
@@ -30,11 +30,11 @@ colors:
     card-background: "#313244"
     text: "#cdd6f4"
     text-header: "#cdd6f4"
-    text-title: "#cba6f7"
-    text-subtitle: "#f5c2e7"
+    text-title: "#cdd6f4"
+    text-subtitle: "#cba6f7"
     card-shadow: "rgba(0, 0, 0, 0.4)"
-    link: "#94e2d5"
-    link-hover: "#a6e3a1"
+    link: "#cba6f7"
+    link-hover: "#cba6f7"
 
 links:
   - name: Contribute
@@ -69,8 +69,8 @@ services:
         subtitle: Comming Soon
         url: "#"
         tag: infra
-      - name: TrueNAS Scale
-        icon: https://avatars.githubusercontent.com/u/53482242?s=200&v=4
+      - name: TrueNAS
+        logo: https://avatars.githubusercontent.com/u/53482242?s=200&v=4
         subtitle: Comming Soon
         url: "#"
         tag: storage
@@ -97,13 +97,12 @@ services:
         tag: accounts
       - name: AWS Console
         icon: fa-brands fa-aws
-        subtitle: Amazon Web Services Console
+        subtitle: Amazon Web Services
         url: http://console.aws.amazon.com/console/home
         tag: provider
         target: _blank
       - name: Hetzner
         icon: fas fa-server
-        subtitle: Amazon Web Services Console
         url: https://robot.hetzner.com/server
         tag: provider
         target: _blank
