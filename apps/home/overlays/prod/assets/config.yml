@@ -14,9 +14,9 @@ footer: '<p>Created with <span class="has-text-danger">❤️</span> with <a hre
 theme: dark
 colors:
   light:
-    highlight-primary: "#dc8a78"
-    highlight-secondary: "#dd7878"
-    highlight-hover: "#dd7878"
+    highlight-primary: "#1e1e2e"
+    highlight-secondary: "#181825"
+    highlight-hover: "#181825"
     background: "#eff1f5"
     card-background: "#ccd0da"
     text: "#4c4f69"
@@ -27,9 +27,9 @@ colors:
     link: "#179299"
     link-hover: "#40a02b"
   dark:
-    highlight-primary: "#f5e0dc"
-    highlight-secondary: "#f2cdcd"
-    highlight-hover: "#f2cdcd"
+    highlight-primary: "#1e1e2e"
+    highlight-secondary: "#181825"
+    highlight-hover: "#181825"
     background: "#1e1e2e"
     card-background: "#313244"
     text: "#cdd6f4"
