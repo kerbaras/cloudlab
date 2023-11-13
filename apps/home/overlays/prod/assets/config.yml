@@ -2,43 +2,46 @@
 # Homepage configuration
 # See https://fontawesome.com/v5/search for icons options
 
-title: "Demo dashboard"
-subtitle: "Homer"
+title: "CloudLab"
+subtitle: "kerb's"
 logo: "logo.png"
 # icon: "fas fa-skull-crossbones" # Optional icon
+
+stylesheet:
+  - 'assets/catppuccin-macchiato.css'
 
 header: true
 footer: '<p>Created with <span class="has-text-danger">❤️</span> with <a href="https://bulma.io/">bulma</a>, <a href="https://vuejs.org/">vuejs</a> & <a href="https://fontawesome.com/">font awesome</a> // Fork me on <a href="https://github.com/bastienwirtz/homer"><i class="fab fa-github-alt"></i></a></p>' # set false if you want to hide it.
 
 # Optional theme customization
-theme: default
-colors:
-  light:
-    highlight-primary: "#3367d6"
-    highlight-secondary: "#4285f4"
-    highlight-hover: "#5a95f5"
-    background: "#f5f5f5"
-    card-background: "#ffffff"
-    text: "#363636"
-    text-header: "#ffffff"
-    text-title: "#303030"
-    text-subtitle: "#424242"
-    card-shadow: rgba(0, 0, 0, 0.1)
-    link: "#3273dc"
-    link-hover: "#363636"
-  dark:
-    highlight-primary: "#3367d6"
-    highlight-secondary: "#4285f4"
-    highlight-hover: "#5a95f5"
-    background: "#131313"
-    card-background: "#2b2b2b"
-    text: "#eaeaea"
-    text-header: "#ffffff"
-    text-title: "#fafafa"
-    text-subtitle: "#f5f5f5"
-    card-shadow: rgba(0, 0, 0, 0.4)
-    link: "#3273dc"
-    link-hover: "#ffdd57"
+theme: dark
+# colors:
+#   light:
+#     highlight-primary: "#3367d6"
+#     highlight-secondary: "#4285f4"
+#     highlight-hover: "#5a95f5"
+#     background: "#f5f5f5"
+#     card-background: "#ffffff"
+#     text: "#363636"
+#     text-header: "#ffffff"
+#     text-title: "#303030"
+#     text-subtitle: "#424242"
+#     card-shadow: rgba(0, 0, 0, 0.1)
+#     link: "#3273dc"
+#     link-hover: "#363636"
+#   dark:
+#     highlight-primary: "#3367d6"
+#     highlight-secondary: "#4285f4"
+#     highlight-hover: "#5a95f5"
+#     background: "#131313"
+#     card-background: "#2b2b2b"
+#     text: "#eaeaea"
+#     text-header: "#ffffff"
+#     text-title: "#fafafa"
+#     text-subtitle: "#f5f5f5"
+#     card-shadow: rgba(0, 0, 0, 0.4)
+#     link: "#3273dc"
+#     link-hover: "#ffdd57"
 
 # Optional message
 message:
@@ -53,16 +56,11 @@ message:
 links:
   - name: "Contribute"
     icon: "fab fa-github"
-    url: "https://github.com/bastienwirtz/homer"
+    url: "https://github.com/kerbaras/cloudlab"
     target: "_blank" # optional html a tag target attribute
   - name: "Wiki"
     icon: "fas fa-book"
-    url: "https://www.wikipedia.org/"
-  # this will link to a second homer page that will load config from additional-page.yml and keep default config values as in config.yml file
-  # see url field and assets/additional-page.yml.dist used in this example:
-  #- name: "another page!"
-  #  icon: "fas fa-file-alt"
-  #  url: "#additional-page"
+    url: "https://github.com/kerbaras/cloudlab/wiki"
 
 # Services
 # First level array represent a group.
@@ -71,15 +69,15 @@ services:
   - name: "Applications"
     icon: "fas fa-cloud"
     items:
-      - name: "Awesome app"
-        logo: "assets/tools/sample.png"
-        subtitle: "Bookmark example"
+      - name: "ArgoCd"
+        logo: "https://avatars.githubusercontent.com/u/30269780?s=200&v=4"
+        subtitle: "GitOps Application Delivery"
         tag: "app"
-        keywords: "self hosted reddit"
-        url: "https://www.reddit.com/r/selfhosted/"
+        keywords: "gitops kubernetes"
+        url: "https://argocd.kerbaras.com/"
         target: "_blank" # optional html a tag target attribute
-      - name: "Another one"
-        logo: "assets/tools/sample2.png"
-        subtitle: "Another application"
+      - name: "Portainer"
+        logo: "https://avatars.githubusercontent.com/u/22225832?s=200&v=4"
+        subtitle: "Kubernetes Management"
         tag: "app"
         url: "#"
