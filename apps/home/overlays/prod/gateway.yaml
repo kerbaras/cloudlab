@@ -13,7 +13,7 @@ spec:
   - home.kerbaras.com
 ---
 # Host
-apiVersion: getambassador.io/v3-alpha
+apiVersion: getambassador.io/v3alpha1
 kind: Host
 metadata:
   name: home.kerbaras.com
@@ -23,7 +23,7 @@ spec:
     name: home-tls
 ---
 # Mapping
-apiVersion: getambassador.io/v3-alpha
+apiVersion: getambassador.io/v3alpha1
 kind: Mapping
 metadata:
   name: home
