@@ -2,10 +2,9 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: portainer
 resources:
+  - https://downloads.portainer.io/ce2-19/portainer-lb.yaml
   - gateway.yaml
 
-helmCharts:
-  - name: portainer
-    repo: https://portainer.github.io/k8s/
-    releaseName: portainer
-    valuesFile: values.yaml
+patches:
+  - path: service.yaml
+  - path: portainer.yaml
