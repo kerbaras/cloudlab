@@ -59,7 +59,7 @@ services:
         url: https://argocd.kerbaras.com
         target: _blank
         keywords: gitops kubernetes argo cd ci
-        tag: cd
+        tag: ci/cd
       - name: Portainer
         logo: https://avatars.githubusercontent.com/u/22225832?s=200&v=4
         tag: infra
@@ -73,35 +73,47 @@ services:
         icon: https://avatars.githubusercontent.com/u/53482242?s=200&v=4
         subtitle: Comming Soon
         url: "#"
+        tag: storage
 
   - name: Monitoring
     icon: fas fa-heartbeat
     items:
       - name: Grafana
-        icon: fa-solid fa-chart-line
+        logo: https://cdn.jsdelivr.net/gh/devicons/devicon/icons/grafana/grafana-original.svg
         url: "#"
         tag: metrics
       - name: Kibana
         icon: fa-solid fa-chart-bar
         url: "#"
-        tag: Logs
+        tag: logs
 
   - name: Services
-    icon: fas fa-co
+    icon: fas fa-cloud
     items:
       - name: Zitadel
         icon: fas fa-fingerprint
-        subtitle: Secure Authentication
+        subtitle: SSO Authentication
         url: https://accounts.kerbaras.com/
+        tag: accounts
       - name: AWS Console
-        icon: fa-solid fa-aws
+        icon: fa-brands fa-aws
         subtitle: Amazon Web Services Console
         url: http://console.aws.amazon.com/console/home
+        tag: provider
+        target: _blank
+      - name: Hetzner
+        icon: fas fa-server
+        subtitle: Amazon Web Services Console
+        url: https://robot.hetzner.com/server
+        tag: provider
         target: _blank
 
   - name: Apps
-    icon: fab fa-rocket
+    icon: fa-solid fa-rocket
     items:
+      - name: Redash
+        logo: https://avatars.githubusercontent.com/u/10746780?s=200&v=4
+        url: "#"
       - name: Ansible Semaphore
         icon: fa-solid fa-wand-magic-sparkles
         subtitle: Comming Soon
@@ -109,7 +121,4 @@ services:
       - name: Argo Workflows
         icon: fa-solid fa-list-check
         subtitle: Comming Soon
-        url: "#"
-      - name: Redash
-        logo: https://avatars.githubusercontent.com/u/10746780?s=200&v=4
         url: "#"
