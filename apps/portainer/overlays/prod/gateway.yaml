@@ -1,0 +1,46 @@
+---
+# certificate
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: portainer.kerbaras.com
+spec:
+  secretName: portainer-tls
+  issuerRef:
+    name: kerbaras.com
+    kind: ClusterIssuer
+  dnsNames:
+  - portainer.kerbaras.com
+---
+# Host
+apiVersion: getambassador.io/v3alpha1
+kind: Host
+metadata:
+  name: portainer.kerbaras.com
+spec:
+  hostname: portainer.kerbaras.com
+  tlsSecret:
+    name: portainer-tls
+---
+# Mapping
+apiVersion: getambassador.io/v3alpha1
+kind: Mapping
+metadata:
+  name: home
+spec:
+  prefix: /
+  hostname: portainer.kerbaras.com
+  service: portainer:80
+---
+# dns
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: portainer.kerbaras.com
+spec:
+  endpoints:
+  - dnsName: portainer.kerbaras.com
+    recordTTL: 300
+    recordType: CNAME
+    targets:
+    - lb.kerbaras.com

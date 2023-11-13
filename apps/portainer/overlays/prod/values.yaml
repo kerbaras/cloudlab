@@ -1,0 +1,8 @@
+enterpriseEdition:
+  enabled: false
+
+service:
+  type: ClusterIP
+
+tls:
+  force: false
