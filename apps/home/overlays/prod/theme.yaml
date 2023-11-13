@@ -10,7 +10,7 @@ spec:
         configMap:
           name: homer-assets
           items:
-          - key: assets/config.yml
+          - key: config.yml
             path: config.yml
-          - key: assets/theme.css
-            path: theme.css
+          - key: catppuccin-mocha.css
+            path: catppuccin-mocha.css
