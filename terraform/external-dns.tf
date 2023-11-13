@@ -23,6 +23,7 @@ resource "helm_release" "external_dns" {
   }
 
   values = [yamlencode({
+    txtPrefix                 = "_external-dns."
     sources                   = ["crd", "service", "ingress", "ambassador-host"]
     managedRecordTypesFilters = ["A", "AAAA", "CNAME", "SRV", "TXT"]
     aws = {
