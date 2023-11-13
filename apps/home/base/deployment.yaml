@@ -10,7 +10,7 @@ spec:
     spec:
       containers:
       - name: homer
-        image: b4bz/homer:lastest
+        image: b4bz/homer:latest
         imagePullPolicy: Always
         ports:
           - name: http
