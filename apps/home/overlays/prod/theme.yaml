@@ -1,0 +1,16 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dashboard
+spec:
+  template:
+    spec:
+      volumes:
+      - name: assets
+        configMap:
+          name: homer-assets
+          items:
+          - key: assets/config.yml
+            path: config.yml
+          - key: assets/theme.css
+            path: theme.css

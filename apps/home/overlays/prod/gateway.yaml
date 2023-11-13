@@ -1,0 +1,46 @@
+---
+# certificate
+apiVersion: cert-manager.io/v1alpha2
+kind: Certificate
+metadata:
+  name: home.kerbaras.com
+spec:
+  secretName: home-tls
+  issuerRef:
+    name: kerbaras.com
+    kind: ClusterIssuer
+  dnsNames:
+  - home.kerbaras.com
+---
+# Host
+apiVersion: getambassador.io/v3-alpha
+kind: Host
+metadata:
+  name: home.kerbaras.com
+spec:
+  hostname: home.kerbaras.com
+  tlsSecret:
+    name: home-tls
+---
+# Mapping
+apiVersion: getambassador.io/v3-alpha
+kind: Mapping
+metadata:
+  name: home
+spec:
+  prefix: /
+  hostname: home.kerbaras.com
+  service: dashboard:80
+---
+# dns
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: home.kerbaras.com
+spec:
+  endpoints:
+  - dnsName: home.kerbaras.com
+    recordTTL: 300
+    recordType: CNAME
+    targets:
+    - lb.kerbaras.com
