@@ -74,18 +74,6 @@ services:
         subtitle: Comming Soon
         url: "#"
 
-  - name: Apps
-    icon: fab fa-rocket
-    items:
-      - name: Ansible Semaphore
-        icon: fa-solid fa-wand-magic-sparkles
-        subtitle: Comming Soon
-        url: "#"
-      - name: Argo Workflows
-        icon: fa-solid fa-list-check
-        subtitle: Comming Soon
-        url: "#"
-
   - name: Monitoring
     icon: fas fa-heartbeat
     items:
@@ -97,9 +85,6 @@ services:
         icon: fa-solid fa-chart-bar
         url: "#"
         tag: Logs
-      - name: Redash
-        logo: https://avatars.githubusercontent.com/u/10746780?s=200&v=4
-        url: "#"
 
   - name: Services
     icon: fas fa-co
@@ -113,3 +98,18 @@ services:
         subtitle: Amazon Web Services Console
         url: http://console.aws.amazon.com/console/home
         target: _blank
+
+  - name: Apps
+    icon: fab fa-rocket
+    items:
+      - name: Ansible Semaphore
+        icon: fa-solid fa-wand-magic-sparkles
+        subtitle: Comming Soon
+        url: "#"
+      - name: Argo Workflows
+        icon: fa-solid fa-list-check
+        subtitle: Comming Soon
+        url: "#"
+      - name: Redash
+        logo: https://avatars.githubusercontent.com/u/10746780?s=200&v=4
+        url: "#"
