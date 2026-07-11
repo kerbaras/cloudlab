@@ -1,0 +1,15 @@
+# Wave 3: policy tiers land once the namespaces they police exist.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: policies
+  namespace: flux-system
+spec:
+  interval: 10m
+  path: ./kubernetes/policies
+  prune: true
+  dependsOn:
+    - name: networking
+  sourceRef:
+    kind: GitRepository
+    name: flux-system

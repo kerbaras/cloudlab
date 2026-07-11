@@ -24,7 +24,7 @@ Gateway, and the policy tiers.
     ├── cilium/              Helm values (bootstrap layer — not GitOps-managed yet)
     ├── networking/          LB pools · GatewayClass/Gateway · certs · routes
     ├── policies/            baseline kustomize components · examples
-    └── argocd/              root app-of-apps + sync-waved Applications
+    └── flux/                flux-system · sources · HelmReleases · Kustomizations
 ```
 
 ## CHECKME index
@@ -141,17 +141,20 @@ until Stage 5 flips the switch.
 
 ## Stage 4 — GitOps root + edge
 
-1. Bootstrap Argo CD and hand it the repo:
+1. Install the Flux controllers and hand them the repo (public, read-only —
+   no repo credentials live in-cluster):
    ```bash
-   helm repo add argo https://argoproj.github.io/argo-helm
-   helm install argocd argo/argo-cd --version 10.1.2 -n argocd --create-namespace
-   kubectl apply -f kubernetes/argocd/root.yaml
+   kubectl apply -k kubernetes/flux/flux-system
    ```
-2. Sync waves land in order: Envoy Gateway + cert-manager (wave 0) →
-   networking (wave 1) → policies (wave 2).
-3. Create the DNS-01 credentials secret referenced by
-   `kubernetes/networking/cert-issuer.yaml` (SOPS-decrypt your copy of the
-   `.example` file and apply it).
+2. Give Flux the SOPS key (the one manual secret; everything downstream
+   decrypts from Git):
+   ```bash
+   kubectl -n flux-system create secret generic sops-age \
+     --from-file=age.agekey="$HOME/Library/Application Support/sops/age/keys.txt"
+   ```
+3. Reconciliation lands in order: `infra` (Envoy Gateway + cert-manager) →
+   `networking` (pools, Gateway, issuer, wildcard cert, Route53 secret) →
+   `policies`. Watch with `flux get kustomizations --watch`.
 4. Watch the edge come up, then publish the AAAA record:
    ```bash
    kubectl -n envoy-gateway-system get svc   # EXTERNAL-IP: 65.21.143.224 + fd02::…

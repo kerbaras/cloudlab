@@ -1,0 +1,20 @@
+# Wave 2: consumes CRDs from infra + bootstrap Cilium (LB pools). SOPS
+# decryption is native here — route53-credentials.sops.yaml flows from Git.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: networking
+  namespace: flux-system
+spec:
+  interval: 10m
+  path: ./kubernetes/networking
+  prune: true
+  dependsOn:
+    - name: infra
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age # created once by hand: README Stage 4
+  sourceRef:
+    kind: GitRepository
+    name: flux-system

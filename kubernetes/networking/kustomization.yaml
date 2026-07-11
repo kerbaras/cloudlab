@@ -9,3 +9,4 @@ resources:
   - redirect.yaml
   - cert-issuer.yaml
   - certificate.yaml
+  - route53-credentials.sops.yaml

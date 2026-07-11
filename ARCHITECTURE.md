@@ -82,7 +82,7 @@ deliberately have not — see Phase 2).
 | IAM (humans) | Zitadel OIDC + apiserver structured `AuthenticationConfiguration` + kubelogin |
 | IAM (workloads / IRSA) | Cluster SA issuer published as a public OIDC provider; JWT federation into Zitadel/OpenBao; SPIFFE/SPIRE as the maximalist upgrade |
 | Secrets Manager | OpenBao + External Secrets Operator, authenticated by cluster JWTs |
-| CloudFormation / Service Catalog | kro `ResourceGraphDefinition`s — `CloudlabCluster` stamps CAPI Cluster + DNS + OIDC client + Argo app in one apply |
+| CloudFormation / Service Catalog | kro `ResourceGraphDefinition`s — `CloudlabCluster` stamps CAPI Cluster + DNS + OIDC client + Flux Kustomization in one apply |
 | CloudWatch | VictoriaMetrics + VictoriaLogs + Grafana + Alloy/OTel; Hubble for flows |
 | Direct Connect / VPN | Tailscale (host extension as subnet router; operator later) |
 
@@ -91,7 +91,7 @@ deliberately have not — see Phase 2).
 ## 4. Layer model
 
 ```
- L7  Platform API        kro (CloudlabCluster), ArgoCD app-of-apps
+ L7  Platform API        kro (CloudlabCluster), Flux Kustomization tree
  L6  Identity            Zitadel · structured authn · SA federation · OpenBao
  L5  Admin plane         Tailscale (subnet router → Service CIDR only)
  L4  Edge                Envoy Gateway on .224 · cert-manager · external-dns
@@ -149,9 +149,9 @@ evaluated *inside* a workload cluster where a broken CNI costs nothing.
 
 CAPI with the KubeVirt infrastructure provider and Sidero's Talos bootstrap +
 control-plane providers (CABPT/CACPPT) against Talos nocloud images: apply a
-`Cluster` CR, receive a Talos cluster in VMs minutes later. Paired with ArgoCD
-ApplicationSets this reproduces the per-PR-preview-environment pattern at the
-*cluster* level. Honest label: this is the "some assembly required" corner of
+`Cluster` CR, receive a Talos cluster in VMs minutes later. Paired with
+Flux-stamped per-cluster Kustomizations (kro templating at L7) this reproduces
+the per-PR-preview-environment pattern at the *cluster* level. Honest label: this is the "some assembly required" corner of
 the design — the fallback happy path is capk's vanilla kubeadm images, but the
 Talos route is worth the fight for config-consistency across layers.
 
@@ -197,7 +197,7 @@ Three flows, one issuer graph:
    flag soup); kubelogin on clients; groups → RBAC. Zitadel over Keycloak
    (weight) and Authentik (completeness); Pocket ID noted for passkey-only
    minimalism.
-2. **Humans → apps.** Everything with native OIDC (Argo, Grafana, Hubble UI,
+2. **Humans → apps.** Everything with native OIDC (Grafana, Hubble UI,
    OpenBao) points at Zitadel. Everything without gets Envoy Gateway
    `SecurityPolicy` OIDC at the edge. SSO is the default, not a per-app
    project.
@@ -214,12 +214,12 @@ Three flows, one issuer graph:
 
 kro `ResourceGraphDefinition`s compose the platform's own product surface: a
 `CloudlabCluster` CR that expands to CAPI Cluster + DNS records + Zitadel OIDC
-client + Argo Application in one apply. Crossplane is deliberately *not* the
+client + Flux Kustomization in one apply. Crossplane is deliberately *not* the
 composition engine — it earns a seat only when managing external providers
 (Cloudflare, Hetzner Cloud burst capacity). CAPH (Syself's
 cluster-api-provider-hetzner, covering both hcloud and Robot) is the
-designated path when the fleet outgrows one box. ArgoCD app-of-apps is the
-GitOps root; this repo is the single source of truth.
+designated path when the fleet outgrows one box. Flux is the GitOps root;
+this repo is the single source of truth.
 
 ---
 
@@ -321,11 +321,11 @@ Pod egress:
 
 ## 7. GitOps & repo layout
 
-ArgoCD app-of-apps from this repo; sync waves order CRD providers before
-consumers (Envoy Gateway → networking → policies). Cilium is the one
-bootstrap-installed component (no CNI, no pods, no Argo) and may be adopted
-into Argo later. Secrets are SOPS-encrypted in-repo (Tailscale auth key, cert
-issuer credentials) until OpenBao assumes custody.
+A Flux Kustomization tree from this repo; `dependsOn` orders CRD providers
+before consumers (infra → networking → policies). Cilium is the one
+bootstrap-installed component (no CNI, no pods, no GitOps) and may be adopted
+into Flux later. Secrets are SOPS-encrypted in-repo and decrypted natively by
+Flux (age key held in-cluster) until OpenBao assumes custody.
 
 ```
 cloudlab/
@@ -338,7 +338,7 @@ cloudlab/
 │   ├── cilium/              Helm values (bootstrap layer)
 │   ├── networking/          LB pools · GatewayClass/Gateway · cert · routes
 │   ├── policies/            baseline components · example policies
-│   └── argocd/              Application definitions (sync-waved)
+│   └── flux/                flux-system · sources · HelmReleases · Kustomizations
 └── (planned)
     ├── clusters/            CAPI manifests per workload cluster (fdN* trios)
     ├── platform/            kro RGDs · external-dns · observability
@@ -358,7 +358,7 @@ The inception tax — running a cloud control plane before any workload — is
 | Cilium + Hubble | ~1–1.5 GB | |
 | KubeVirt + CDI | ~1 GB | plus ~200 MB virt-launcher overhead *per VM* |
 | CAPI + providers | ~0.5 GB | |
-| ArgoCD | ~1 GB | |
+| Flux controllers | ~0.3 GB | |
 | Envoy Gateway | ~0.5 GB | |
 | Zitadel + OpenBao | ~1.5 GB | L6, Phase 3 |
 | VictoriaMetrics/Logs + Grafana + Alloy | ~1.5–2 GB | |
@@ -422,7 +422,7 @@ fate with one kernel, one PSU, one NVMe pair.
 | 10 | Zitadel IdP | Keycloak, Authentik, Pocket ID | Modern, Go, light, real multi-tenancy; Pocket ID if passkey-minimalism wins | — |
 | 11 | kro platform API | Crossplane compositions | Lighter; Crossplane reserved for external providers only | External resources (Cloudflare, hcloud burst) enter scope |
 | 12 | SaaS Tailscale | Headscale | Zero control-plane ops now; sovereignty is a later itch | The itch |
-| 13 | ArgoCD | Flux | ApplicationSets for cluster/preview stamping; ecosystem; operator familiarity | — |
+| 13 | Flux | ArgoCD | Native SOPS decryption, pull-based, ~700 MB lighter; v1's endgame was already a Flux migration; cluster stamping moves to kro+Flux templates | A console need arises (Headlamp/Capacitor) |
 
 ---
 
@@ -440,7 +440,7 @@ CCNP variants of the baselines.
 
 **Phase 3 — the fleet.** KubeVirt + CDI in anger; CAPI + CABPT/CACPPT;
 `cluster-a` on its `fd10/fd11/fd12` trio; TLSRoute wired for real;
-ApplicationSets stamping preview clusters; vCluster lane.
+Flux-templated preview clusters; vCluster lane.
 
 **Phase 4 — identity & platform.** Zitadel + structured authn + kubelogin;
 gateway OIDC everywhere; SA-issuer federation (IRSA-style) + OpenBao/ESO;
