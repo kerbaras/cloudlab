@@ -1,0 +1,23 @@
+# Wave 1: consumes CRDs from wave 0 (EnvoyProxy, Gateway API, cert-manager)
+# and from the bootstrap Cilium (CiliumLoadBalancerIPPool).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: networking
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/kerbaras/cloudlab.git
+    targetRevision: v2 # CHECKME: switch to main once v2 merges
+    path: kubernetes/networking
+  destination:
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

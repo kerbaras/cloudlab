@@ -1,0 +1,3 @@
+creation_rules:
+  - path_regex: .*\.sops\.ya?ml$
+    age: age1CHECKME # CHECKME: your age public key (age-keygen, README Stage 0)

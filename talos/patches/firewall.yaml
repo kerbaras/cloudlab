@@ -1,0 +1,75 @@
+# Talos ingress firewall (ARCHITECTURE.md §6.2, host-destined plane).
+# Deliberately NO 80/443/6443-edge rules: LB traffic is intercepted by Cilium
+# eBPF upstream of nftables — rules here would be dead code implying coverage.
+apiVersion: v1alpha1
+kind: NetworkDefaultActionConfig
+ingress: block
+---
+# 00-break-glass: DELETE THIS DOCUMENT in README Stage 2, after tailnet access
+# is proven. Until then it is the anti-lockout fallback.
+apiVersion: v1alpha1
+kind: NetworkRuleConfig
+name: 00-break-glass
+portSelector:
+  ports:
+    - 50000
+    - 6443
+  protocol: tcp
+ingress:
+  - subnet: 203.0.113.7/32 # CHECKME: your current operator IP
+---
+apiVersion: v1alpha1
+kind: NetworkRuleConfig
+name: 10-tailscale-direct
+portSelector:
+  ports:
+    - 41641
+  protocol: udp
+ingress:
+  - subnet: 0.0.0.0/0
+  - subnet: ::/0
+---
+apiVersion: v1alpha1
+kind: NetworkRuleConfig
+name: 20-apid-tailnet
+portSelector:
+  ports:
+    - 50000
+  protocol: tcp
+ingress:
+  - subnet: 100.64.0.0/10
+---
+apiVersion: v1alpha1
+kind: NetworkRuleConfig
+name: 21-kubeapi-tailnet
+portSelector:
+  ports:
+    - 6443
+  protocol: tcp
+ingress:
+  - subnet: 100.64.0.0/10
+---
+# Cluster-internal: pods reaching host services (kubelet 10250, cilium health
+# 4240, hubble 4244/4245, …). Pods are policed by Cilium identity policy;
+# this plane only decides that cluster ranges may knock on host ports at all.
+apiVersion: v1alpha1
+kind: NetworkRuleConfig
+name: 30-cluster-internal
+portSelector:
+  ports:
+    - 1-65535
+  protocol: tcp
+ingress:
+  - subnet: 10.244.0.0/16
+  - subnet: 2a01:4f9:3b:fd01::/64
+---
+apiVersion: v1alpha1
+kind: NetworkRuleConfig
+name: 31-cluster-internal-udp
+portSelector:
+  ports:
+    - 1-65535
+  protocol: udp
+ingress:
+  - subnet: 10.244.0.0/16
+  - subnet: 2a01:4f9:3b:fd01::/64

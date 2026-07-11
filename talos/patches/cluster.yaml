@@ -1,0 +1,8 @@
+cluster:
+  proxy:
+    disabled: true # Cilium kube-proxy replacement via KubePrism
+machine:
+  features:
+    kubePrism:
+      enabled: true
+      port: 7445

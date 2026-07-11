@@ -1,99 +1,197 @@
 # cloudlab
 
-Infrastructure repository for my [cloud-lab](https://home.kerbaras.com)
+A single Hetzner dedicated server operated as if it were a small cloud
+provider. Design rationale: [`ARCHITECTURE.md`](./ARCHITECTURE.md).
+Addressing contract: [`SUBNET-PLAN.md`](./SUBNET-PLAN.md).
 
-## Overview
-
-Infrastructure as Code for my cloud-based lab. This repository contains provisioning and configuration definitions in Terraform and Kustomization for a Kubernetes Cluster Environment.
+This README is the **rollout runbook for Phase 1 — the network baseline**:
+Talos + firewall + Tailscale, Cilium dual-stack, LB pools, the Envoy edge
+Gateway, and the policy tiers.
 
 > [!IMPORTANT]
-> This project is still in the experimental stage and it's used to run experiments and learn new technologies. It's not intended to be used in production environments.
-> For more information check [the roadmap](#roadmap).
+> Placeholders: `cloudlab.example` (domain), `metal-01` (host),
+> `cloudlab-mgmt` (cluster). Before applying anything, sweep the repo:
+> `grep -rn CHECKME .`
 
-## Technology Stack
+## Repo layout
 
-| Logo                                                                                                        | Name                                              | Description                         |
-| ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------- | ----------------------------------- |
-| <img width="32" src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/terraform/terraform-original.svg"/> | [Terraform](https://www.terraform.io/)            | Infrastructure as Code              |
-| <img width="32" src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/kubernetes/kubernetes-plain.svg"/>  | [Kubernetes](https://kubernetes.io/)              | Container Orchestration             |
-| <img width="32" src="https://img.stackshare.io/service/12670/kustomize.png"/>                               | [Kustomize](https://kustomize.io/)                | Kubernetes Configuration Management |
-| <img width="32" src="https://avatars.githubusercontent.com/u/15859888?s=200&v=4"/>                          | [Helm](https://helm.sh/)                          | Kubernetes Package Manager          |
-| <img width="32" src="https://avatars.githubusercontent.com/u/30269780?s=200&v=4"/>                          | [ArgoCD](https://argoproj.github.io/argo-cd/)     | GitOps Continuous Delivery          |
-| <img width="32" src="https://github.com/jetstack/cert-manager/raw/master/logo/logo.png"/>                   | [Cert-Manager](https://cert-manager.io/)          | Kubernetes Certificate Management   |
-| <img width="32" src="https://k0sproject.io/images/k0s-logo.svg"/>                                           | [k0s](https://k0sproject.io/)                     | Kubernetes Distribution             |
-| <img width="32" src="https://longhorn.io/img/logos/longhorn-icon-white.png"/>                               | [Longhorn](https://longhorn.io/)                  | Kubernetes Storage Orchestration    |
-| <img width="32" src="https://avatars.githubusercontent.com/u/60239468?s=200&v=4"/>                          | [MetalLB](https://metallb.universe.tf/)           | Kubernetes Load Balancer            |
-| <img width="32" src="https://avatars.githubusercontent.com/u/79531940?s=200&v=4"/>                          | [Emissary Ingress](https://www.getambassador.io/) | Kubernetes API Gateway              |
-| <img width="32" src="https://avatars.githubusercontent.com/u/25301026?s=200&v=4"/>                          | [Linkerd](https://linkerd.io/)                    | Kubernetes Service Mesh             |
-| <img width="32" src="https://avatars.githubusercontent.com/u/3380462?s=200&v=4"/>                           | [Prometheus](https://prometheus.io/)              | Kubernetes Monitoring               |
-| <img width="32" src="https://avatars.githubusercontent.com/u/7195757?s=200&v=4"/>                           | [Grafana](https://grafana.com/)                   | Kubernetes Observability            |
-| <img width="32" src="https://github.com/grafana/loki/raw/main/docs/sources/logo.png?raw=true"/>             | [Loki](https://grafana.com/oss/loki/)             | Kubernetes Log Aggregation          |
-| <img width="32" src="https://raw.githubusercontent.com//bastienwirtz/homer/main/public/logo.png"/>          | [Homer](https://github.com/bastienwirtz/homer)    | Kubernetes Dashboard                |
-| <img width="32" src="https://avatars.githubusercontent.com/u/22225832?s=200&v=4"/>                          | [Portainer](https://www.portainer.io/)            | Kubernetes Dashboard                |
+```
+├── ARCHITECTURE.md          canonical design record
+├── SUBNET-PLAN.md           addressing contract
+├── talos/                   talconfig · schematic · machineconfig patches
+├── tailscale/               tailnet ACL policy
+└── kubernetes/
+    ├── cilium/              Helm values (bootstrap layer — not GitOps-managed yet)
+    ├── networking/          LB pools · GatewayClass/Gateway · certs · routes
+    ├── policies/            baseline kustomize components · examples
+    └── argocd/              root app-of-apps + sync-waved Applications
+```
 
-### Hardware
+## CHECKME index
 
-So far the lab is running on [Hertzner](https://www.hetzner.com/) with the following nodes:
+| Where | What you must fill in |
+|---|---|
+| `talos/talconfig.yaml` | install disk, IPv4 netmask + gateway (Robot panel), tailnet MagicDNS cert SAN |
+| `talos/patches/firewall.yaml` | break-glass operator IP (deleted in Stage 2) |
+| `talos/patches/tailscale.yaml` | copied from `.example`; tagged Tailscale auth key |
+| `kubernetes/networking/cert-issuer.yaml` | ACME email, DNS-01 provider credentials ref |
+| `kubernetes/argocd/apps/*.yaml` | repo URL / target revision if you fork or rename branches |
+| `.sops.yaml` | your age recipient |
+| DNS zone | `*.cloudlab.example` A → `65.21.143.224`, AAAA → edge address from `fd02::/64` (after Stage 4) |
 
-- AX41-NVMe:
-  - CPU: AMD Ryzen 5 3600 6-Core
-  - RAM: 64 GB DDR4
-  - Storage: 2 x 512 GB NVMe SSD
+---
 
-### Features
+## Stage 0 — Prerequisites (workstation)
 
-- [x] Kubernetes Cluster: Using [k0s](https://k0sproject.io/) as Kubernetes distribution
-- [x] GitOps Continuous Delivery: Using [ArgoCD](https://argoproj.github.io/argo-cd/) as GitOps Continuous Delivery
-- [x] Application Dashboard: Using [Homer](https://github.com/bastienwirtz/homer)
-- [x] Kubernetes Dashboard: Using [Portainer](https://www.portainer.io/)
-- [x] Single Sign-On: Using [Zitadel](https://zitadel.com/)
-  - [ ] Kubernetes OIDC Authentication
-  - [ ] Private Application Authentication
-  - [ ] Private Docker Registry Authentication
-- [x] Kubernetes Storage Orchestration: Using [Longhorn](https://longhorn.io/)
-- [ ] Monitoring and Alerting
-- [ ] Virtual Private Network
-- [ ] NAT Load Balancer
-- [ ] Virtual Private Cloud
-- [ ] Virtual Machine Orchestration
+Tools: `talosctl`, `talhelper`, `kubectl`, `helm`, `cilium`, `hubble`,
+`sops`, `age`.
 
-## Getting Started
+1. **SOPS/age**: generate a key (`age-keygen`), put the public recipient in
+   `.sops.yaml`, keep the private key off-box (password manager).
+2. **Tailscale**: in the admin console apply
+   [`tailscale/policy.hujson`](./tailscale/policy.hujson), then create an
+   auth key **tagged `tag:cloudlab-host`** (reusable off, ephemeral off).
+3. **Secrets**:
+   ```bash
+   cd talos
+   talhelper gensecret > talsecret.sops.yaml && sops -e -i talsecret.sops.yaml
+   cp patches/tailscale.yaml.example patches/tailscale.yaml   # fill TS_AUTHKEY (gitignored)
+   ```
+4. **DNS**: create `*.cloudlab.example. A 65.21.143.224` now; AAAA comes
+   after Stage 4 assigns the v6 edge address.
 
-So far this is not supported out of the box. Provisioning is handled by Terraform, but some resources need to be created manually.
+## Stage 1 — Metal (Talos via Hetzner rescue)
 
-### Bootstrap the Cluster
+> [!CAUTION]
+> The `dd` below irreversibly wipes the target disk. Confirm the device in
+> rescue mode with `lsblk` first.
+
+1. Robot → server → **Rescue** tab → activate (linux/x86_64) → reboot → SSH in.
+2. Build the factory image from [`talos/schematic.yaml`](./talos/schematic.yaml):
+   ```bash
+   ID=$(curl -sX POST --data-binary @talos/schematic.yaml https://factory.talos.dev/schematics | jq -r .id)
+   # on the rescue system:
+   wget -O /tmp/talos.raw.xz "https://factory.talos.dev/image/${ID}/v1.13.6/metal-amd64.raw.xz"
+   lsblk   # confirm the system disk
+   xz -dc /tmp/talos.raw.xz | dd of=/dev/nvme0n1 bs=4M status=progress && sync
+   reboot
+   ```
+3. Talos boots into maintenance mode on `65.21.143.251`. Generate and apply:
+   ```bash
+   cd talos
+   talhelper genconfig
+   talosctl apply-config --insecure -n 65.21.143.251 \
+     --file clusterconfig/cloudlab-mgmt-metal-01.yaml
+   talosctl --talosconfig clusterconfig/talosconfig -n 65.21.143.251 bootstrap
+   talosctl --talosconfig clusterconfig/talosconfig -n 65.21.143.251 kubeconfig ..
+   ```
+4. Expected state: node `NotReady` (no CNI yet — deliberate), firewall
+   default-block active with the break-glass rule admitting your operator IP.
+
+## Stage 2 — Prove the tailnet, then burn the break-glass rule
+
+1. The tailscale extension registers `metal-01` on the tailnet (check the
+   admin console; approve the advertised route `10.96.0.0/12` if
+   auto-approval didn't).
+2. **Prove** management-plane access over the tailnet before removing the
+   fallback:
+   ```bash
+   talosctl -n <metal-01-tailscale-ip> version
+   kubectl --server https://<metal-01-tailscale-ip>:6443 get nodes
+   ```
+3. Point your configs at the tailnet permanently: edit `talosconfig`
+   endpoints and the kubeconfig `server:` to the MagicDNS name (it is in the
+   cert SANs via `talos/talconfig.yaml`).
+4. Delete the break-glass document from
+   [`talos/patches/firewall.yaml`](./talos/patches/firewall.yaml) (the block
+   marked `00-break-glass`), regenerate, re-apply:
+   ```bash
+   talhelper genconfig && talosctl -n <tailscale-ip> apply-config \
+     --file clusterconfig/cloudlab-mgmt-metal-01.yaml
+   ```
+5. Verify from a network that is neither the tailnet nor your operator IP:
+   `nc -vz 65.21.143.251 50000` and `:6443` must time out.
+
+Lockout after this point costs a rescue-mode reinstall (~30 min), not the box.
+
+## Stage 3 — Cilium (the one bootstrap-installed layer)
 
 ```bash
-cd k0s
-k0sctl apply -c k0sctl.yaml
+helm repo add cilium https://helm.cilium.io
+helm install cilium cilium/cilium --version 1.19.5 \
+  -n kube-system -f kubernetes/cilium/values.yaml
+cilium status --wait
 ```
 
-### Provisioning Infrastructure
+Verify dual-stack before continuing:
 
 ```bash
-cd terraform
-terraform init
-terraform apply --var-file=cloudlab.tfvars
+kubectl get node metal-01 -o jsonpath='{.spec.podCIDRs}'   # 10.244/24 + fd01::/64 slice
+kubectl run tmp --rm -it --image=nicolaka/netshoot -- bash
+  ip -6 addr                     # pod holds a GUA from 2a01:4f9:3b:fd01::/64
+  curl -4 ifconfig.co            # egress = 65.21.143.251 (SNAT)
+  curl -6 ifconfig.co            # egress = the pod's own GUA (no NAT)
 ```
 
-### Deploying Applications
+Note: Cilium starts in `policy-audit-mode` — policies observe, not enforce,
+until Stage 5 flips the switch.
 
-Applications are handled by ArgoCD. To deploy an application, create a new folder under `apps/{my-app}` and add a `kustomization.yaml` file.
-Then add the application to the `applications.tf` file and deploy it using terraform.
+## Stage 4 — GitOps root + edge
 
-The app folder follows the following structure:
+1. Bootstrap Argo CD and hand it the repo:
+   ```bash
+   helm repo add argo https://argoproj.github.io/argo-helm
+   helm install argocd argo/argo-cd --version 10.1.2 -n argocd --create-namespace
+   kubectl apply -f kubernetes/argocd/root.yaml
+   ```
+2. Sync waves land in order: Envoy Gateway + cert-manager (wave 0) →
+   networking (wave 1) → policies (wave 2).
+3. Create the DNS-01 credentials secret referenced by
+   `kubernetes/networking/cert-issuer.yaml` (SOPS-decrypt your copy of the
+   `.example` file and apply it).
+4. Watch the edge come up, then publish the AAAA record:
+   ```bash
+   kubectl -n envoy-gateway-system get svc   # EXTERNAL-IP: 65.21.143.224 + fd02::…
+   kubectl -n edge get gateway edge          # PROGRAMMED: True
+   kubectl -n edge get certificate           # READY: True (DNS-01 takes a few minutes)
+   ```
 
-```
-apps
-└── my-app
-    ├── base
-    │   ├── kustomization.yaml
-    │   └── deplyment.yaml
-    └── overlays
-        ├── dev
-        │   ├── kustomization.yaml
-        │   └── app.env
-        └── prod
-            ├── kustomization.yaml
-            └── app.yaml
-```
+## Stage 5 — Verification suite (Phase 1 exit criteria)
+
+**From the internet** (any host that is not on the tailnet):
+
+| Check | Expectation |
+|---|---|
+| `nmap -sS -p- 65.21.143.251` | all TCP filtered |
+| `nmap -sU -p 41641 65.21.143.251` | open\|filtered (Tailscale) |
+| `nmap -sS -p- 65.21.143.224` | exactly 80, 443, 6443 open |
+| `curl -I http://anything.cloudlab.example` | `301` → https |
+| `curl -v https://anything.cloudlab.example` | valid `*.cloudlab.example` cert (404 body is fine — nothing is routed yet) |
+| `curl -6 -I https://anything.cloudlab.example` | same, over the AAAA |
+| `ping6 <any pod GUA from fd01::/64>` | silence; Hubble logs `world → pod DROP` |
+
+**From the tailnet:**
+
+| Check | Expectation |
+|---|---|
+| `talosctl -n metal-01 version` / `kubectl get nodes` | works over MagicDNS |
+| `curl <any ClusterIP>` from your laptop | works (advertised Service CIDR) |
+| Tailscale admin console | `metal-01` has no ACL grant toward other devices |
+
+**Policy audit → enforce:** run for a few days, watching
+`hubble observe --verdict AUDIT` for legitimate flows you forgot to allow.
+Then set `policy-audit-mode: "false"` in
+[`kubernetes/cilium/values.yaml`](./kubernetes/cilium/values.yaml),
+`helm upgrade`, and re-run the external checks.
+
+Phase 1 is done when every row above passes. Next: Phase 2/3 per
+[`ARCHITECTURE.md`](./ARCHITECTURE.md) §12.
+
+## Recovery
+
+- **Bricked host / lost config** → Stage 1 again (rescue + `dd` + `talhelper
+  genconfig` + bootstrap): ~30 minutes to a bare mgmt cluster.
+- **etcd** → `talosctl etcd snapshot db.snapshot` periodically, shipped
+  off-box; everything else reconstructs from this repo.
+- **Locked out of the firewall** → rescue mode; the break-glass rule only
+  exists between Stages 1 and 2 by design.

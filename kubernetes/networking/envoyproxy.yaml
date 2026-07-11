@@ -1,0 +1,23 @@
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyProxy
+metadata:
+  name: edge-proxy
+  namespace: envoy-gateway-system
+spec:
+  provider:
+    type: Kubernetes
+    kubernetes:
+      envoyService:
+        type: LoadBalancer
+        externalTrafficPolicy: Local # preserve client IPs through Cilium KPR
+        labels:
+          # Labels select the LB-IPAM pools (lb-pools.yaml): .224 + one fd02:: address
+          cloudlab.example/lb-pool: edge-ipv4
+          cloudlab.example/public-v6: "true"
+        patch:
+          type: StrategicMerge
+          value:
+            spec:
+              ipFamilyPolicy: PreferDualStack
+      envoyDeployment:
+        replicas: 1

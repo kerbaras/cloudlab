@@ -1,0 +1,21 @@
+# Example: admit the edge gateway into an app namespace (the second key of
+# the two-key launch — the first is the namespace label in Git).
+# Copy into your app's kustomization; not applied from here.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-edge-gateway
+  namespace: CHECKME-app-namespace
+spec:
+  endpointSelector:
+    matchLabels:
+      app: CHECKME-app
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: envoy-gateway-system
+            gateway.envoyproxy.io/owning-gateway-name: edge
+      toPorts:
+        - ports:
+            - port: "8080" # CHECKME: your app's container port
+              protocol: TCP

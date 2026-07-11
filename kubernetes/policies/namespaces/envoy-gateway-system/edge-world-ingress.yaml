@@ -1,0 +1,24 @@
+# The one place identity=world is welcome: the edge Envoy pods, on exactly
+# the listener ports. Envoy Gateway maps privileged listener ports +10000
+# inside the pod (80→10080, 443→10443); 6443 is unprivileged and stays.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: edge-world-ingress
+spec:
+  endpointSelector:
+    matchLabels:
+      gateway.envoyproxy.io/owning-gateway-name: edge
+      gateway.envoyproxy.io/owning-gateway-namespace: edge
+  ingress:
+    - fromEntities:
+        - world
+        - cluster
+      toPorts:
+        - ports:
+            - port: "10080"
+              protocol: TCP
+            - port: "10443"
+              protocol: TCP
+            - port: "6443"
+              protocol: TCP

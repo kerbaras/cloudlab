@@ -1,0 +1,33 @@
+// Tailnet policy (ARCHITECTURE.md L5). Admin devices reach the host's admin
+// ports and the advertised Service CIDR; the host gets NO reach into other
+// tailnet devices (no rule with src tag:cloudlab-host — allowlist semantics).
+{
+	"tagOwners": {
+		"tag:cloudlab-host": ["autogroup:admin"],
+	},
+
+	"acls": [
+		// admins → host admin plane (talosctl :50000, kubectl :6443, ping, …)
+		{
+			"action": "accept",
+			"src":    ["autogroup:admin"],
+			"dst":    ["tag:cloudlab-host:*"],
+		},
+		// admins → Services advertised by the subnet router (the only routes it offers)
+		{
+			"action": "accept",
+			"src":    ["autogroup:admin"],
+			"dst":    ["10.96.0.0/12:*", "fd63:6c6f:7564::/108:*"],
+		},
+	],
+
+	"autoApprovers": {
+		"routes": {
+			"10.96.0.0/12":          ["tag:cloudlab-host"],
+			"fd63:6c6f:7564::/108":  ["tag:cloudlab-host"],
+		},
+	},
+
+	// No Tailscale SSH into an OS that has no shell.
+	"ssh": [],
+}

@@ -1,0 +1,27 @@
+# Wave 0: CRD providers before consumers (Gateway API CRDs, incl. the
+# experimental TLSRoute used by the :6443 listener, ship with this chart).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: envoy-gateway
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: registry-1.docker.io/envoyproxy
+    chart: gateway-helm
+    targetRevision: v1.8.2
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: envoy-gateway-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true # Gateway API CRDs exceed the annotation size limit

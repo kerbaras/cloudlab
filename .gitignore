@@ -34,3 +34,14 @@ override.tf.json
 terraform.rc
 
 kubeconfig.yml
+
+# Talos generated output & local secrets (v2)
+talos/clusterconfig/
+talos/talsecret.yaml
+talos/patches/tailscale.yaml
+talosconfig
+kubeconfig
+
+# SOPS: only encrypted files belong in Git; local decrypted copies never do
+*.dec.yaml
+age.key

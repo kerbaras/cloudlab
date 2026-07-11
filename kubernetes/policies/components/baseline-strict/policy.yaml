@@ -1,0 +1,29 @@
+# Tier: baseline-strict (ARCHITECTURE.md §6.3) — same-namespace-only ingress
+# (+ host for kubelet probes), default-deny egress with DNS funded through the
+# L7 proxy. Cross-namespace and external flows require explicit per-app
+# policies (see ../../examples/).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: baseline-strict
+spec:
+  endpointSelector: {}
+  ingress:
+    - fromEndpoints:
+        - {} # same namespace only
+    - fromEntities:
+        - host # kubelet liveness/readiness probes
+  egress:
+    - toEndpoints:
+        - {} # same namespace
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: ANY
+          rules:
+            dns:
+              - matchPattern: "*"

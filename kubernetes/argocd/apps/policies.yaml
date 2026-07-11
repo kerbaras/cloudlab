@@ -1,0 +1,22 @@
+# Wave 2: policy tiers land last, once the namespaces they police exist.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: policies
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/kerbaras/cloudlab.git
+    targetRevision: v2 # CHECKME: switch to main once v2 merges
+    path: kubernetes/policies
+  destination:
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

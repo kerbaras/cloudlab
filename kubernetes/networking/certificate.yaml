@@ -1,0 +1,15 @@
+# Wildcard for the :443 listener. *.k8s.cloudlab.example needs no cert here:
+# :6443 is passthrough — workload clusters present their own.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: wildcard-cloudlab-example
+  namespace: edge
+spec:
+  secretName: wildcard-cloudlab-example-tls
+  issuerRef:
+    name: letsencrypt-dns01
+    kind: ClusterIssuer
+  dnsNames:
+    - "*.cloudlab.example"
+    - cloudlab.example

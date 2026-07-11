@@ -1,0 +1,20 @@
+# Example: the anti-botnet pattern — a workload holding an API key gets an
+# explicit toFQDNs allowlist and nothing else leaves the namespace.
+# Requires the baseline-strict DNS-via-L7-proxy rule to resolve names.
+# Copy into your app's kustomization; not applied from here.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-github-api-only
+  namespace: CHECKME-app-namespace
+spec:
+  endpointSelector:
+    matchLabels:
+      app: CHECKME-app
+  egress:
+    - toFQDNs:
+        - matchName: api.github.com
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP

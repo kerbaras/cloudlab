@@ -1,0 +1,24 @@
+# LB-IPAM pools = the Elastic-IP plane (SUBNET-PLAN.md §1/§2.2).
+# Public addressing is pool membership, decided by labels in Git — invariants
+# 2 and 3 of the security model.
+apiVersion: cilium.io/v2
+kind: CiliumLoadBalancerIPPool
+metadata:
+  name: edge-ipv4
+spec:
+  blocks:
+    - cidr: 65.21.143.224/32 # the one-address v4 prison
+  serviceSelector:
+    matchLabels:
+      cloudlab.example/lb-pool: edge-ipv4
+---
+apiVersion: cilium.io/v2
+kind: CiliumLoadBalancerIPPool
+metadata:
+  name: public-ipv6
+spec:
+  blocks:
+    - cidr: 2a01:4f9:3b:fd02::/64 # mgmt LB pool (fd02 = cluster 0, role 2)
+  serviceSelector:
+    matchLabels:
+      cloudlab.example/public-v6: "true"

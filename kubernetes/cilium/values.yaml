@@ -1,0 +1,73 @@
+# Cilium 1.19.x — bootstrap layer (ARCHITECTURE.md L2). Installed by hand in
+# README Stage 3; the only component not (yet) owned by Argo.
+#   helm install cilium cilium/cilium --version 1.19.5 -n kube-system -f values.yaml
+
+# Talos: apiserver via KubePrism, no kube-proxy
+kubeProxyReplacement: true
+k8sServiceHost: localhost
+k8sServicePort: 7445
+
+# Talos-required security context (no SYS_MODULE; cgroups mounted by talos)
+securityContext:
+  capabilities:
+    ciliumAgent:
+      - CHOWN
+      - KILL
+      - NET_ADMIN
+      - NET_RAW
+      - IPC_LOCK
+      - SYS_ADMIN
+      - SYS_RESOURCE
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+    cleanCiliumState:
+      - NET_ADMIN
+      - SYS_ADMIN
+      - SYS_RESOURCE
+cgroup:
+  autoMount:
+    enabled: false
+  hostRoot: /sys/fs/cgroup
+
+# Dual-stack native routing (SUBNET-PLAN.md): no tunnels on one node with a
+# genuinely routed /56.
+routingMode: native
+ipv4:
+  enabled: true
+ipv6:
+  enabled: true
+ipam:
+  mode: kubernetes # podCIDRs from the Talos cluster config (10.244/16 + fd01::/64)
+ipv4NativeRoutingCIDR: 10.244.0.0/16
+ipv6NativeRoutingCIDR: 2a01:4f9:3b:fd00::/56
+enableIPv4Masquerade: true # v4 pod egress SNATs to .251
+enableIPv6Masquerade: false # v6 egress is native from fd01::/64 — no NAT ever
+bpf:
+  masquerade: true
+
+# LB-IPAM pools live in kubernetes/networking/lb-pools.yaml. Routed addresses
+# arrive at the NIC by themselves — no L2 announcements, no BGP.
+externalIPs:
+  enabled: true
+nodePort:
+  enabled: true
+
+# Flow observability = the proof half of the security model (§6.4)
+hubble:
+  enabled: true
+  relay:
+    enabled: true
+  ui:
+    enabled: true
+
+# Edge is Envoy Gateway's job; keep CNI and edge concerns separate (§11.5)
+gatewayAPI:
+  enabled: false
+
+operator:
+  replicas: 1
+
+extraConfig:
+  policy-audit-mode: "true" # CHECKME: flip to "false" after the Stage 5 audit period

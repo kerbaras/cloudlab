@@ -1,0 +1,20 @@
+# App-of-apps root (ARCHITECTURE.md §7). Applied once by hand in README
+# Stage 4; everything below kubernetes/argocd/apps/ flows from Git after that.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/kerbaras/cloudlab.git
+    targetRevision: v2 # CHECKME: switch to main once v2 merges
+    path: kubernetes/argocd/apps
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

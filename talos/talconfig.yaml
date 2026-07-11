@@ -1,0 +1,51 @@
+# talhelper config for the management cluster (ARCHITECTURE.md L0).
+# Generate: talhelper gensecret > talsecret.sops.yaml && sops -e -i talsecret.sops.yaml
+#           talhelper genconfig
+clusterName: cloudlab-mgmt
+talosVersion: v1.13.6
+kubernetesVersion: v1.36.2
+endpoint: https://65.21.143.251:6443
+allowSchedulingOnControlPlanes: true
+cniConfig:
+  name: none # Cilium is bootstrap-installed, see README Stage 3
+clusterPodNets:
+  - 10.244.0.0/16
+  - 2a01:4f9:3b:fd01::/64
+clusterSvcNets:
+  - 10.96.0.0/12
+  - fd63:6c6f:7564::/108
+additionalApiServerCertSans: &sans
+  - 65.21.143.251
+  - 2a01:4f9:3b:2d44::1
+  - metal-01.CHECKME.ts.net # CHECKME: MagicDNS name once the host joins the tailnet
+additionalMachineCertSans: *sans
+patches:
+  - "@./patches/cluster.yaml"
+  - "@./patches/sysctls.yaml"
+  - "@./patches/firewall.yaml"
+  - "@./patches/tailscale.yaml" # gitignored copy of tailscale.yaml.example (holds TS_AUTHKEY)
+nodes:
+  - hostname: metal-01
+    ipAddress: 65.21.143.251
+    controlPlane: true
+    installDisk: /dev/nvme0n1 # CHECKME: confirm the system disk with lsblk in rescue mode (§9: nvme1n1 stays untouched as the LVM PV pool)
+    nameservers:
+      - 1.1.1.1 # CHECKME: swap for Hetzner recursors from the Robot panel if preferred
+      - 8.8.8.8
+      - 2606:4700:4700::1111
+    networkInterfaces:
+      - deviceSelector:
+          physical: true
+        addresses:
+          - 65.21.143.251/26 # CHECKME: exact netmask from Robot panel
+          - 2a01:4f9:3b:2d44::1/64
+        routes:
+          - network: 0.0.0.0/0
+            gateway: 65.21.143.193 # CHECKME: IPv4 gateway from Robot panel
+          - network: ::/0
+            gateway: fe80::1
+    schematic:
+      customization:
+        systemExtensions:
+          officialExtensions:
+            - siderolabs/tailscale

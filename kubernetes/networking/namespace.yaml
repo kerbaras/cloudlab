@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: edge
+  labels:
+    # Two-key launch (ARCHITECTURE.md L4): only labeled namespaces may attach
+    # routes to the edge Gateway.
+    cloudlab.example/gateway-access: "true"

@@ -1,0 +1,50 @@
+# Example: the postgres trio for a baseline-strict namespace — app may dial
+# postgres, postgres accepts only the app, postgres dials nobody.
+# Copy into your app's kustomization; not applied from here.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: app-to-postgres
+  namespace: CHECKME-app-namespace
+spec:
+  endpointSelector:
+    matchLabels:
+      app: CHECKME-app
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            app: postgres
+      toPorts:
+        - ports:
+            - port: "5432"
+              protocol: TCP
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: postgres-from-app-only
+  namespace: CHECKME-app-namespace
+spec:
+  endpointSelector:
+    matchLabels:
+      app: postgres
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app: CHECKME-app
+      toPorts:
+        - ports:
+            - port: "5432"
+              protocol: TCP
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: postgres-no-egress
+  namespace: CHECKME-app-namespace
+spec:
+  endpointSelector:
+    matchLabels:
+      app: postgres
+  egress:
+    - toEndpoints: [] # deny-all egress: a database initiates nothing
