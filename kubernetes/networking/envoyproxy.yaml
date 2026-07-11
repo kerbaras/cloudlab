@@ -4,6 +4,7 @@ metadata:
   name: edge-proxy
   namespace: envoy-gateway-system
 spec:
+  ipFamily: DualStack # bind :: not 0.0.0.0 — without this the v6 VIP dies at the socket
   provider:
     type: Kubernetes
     kubernetes:
