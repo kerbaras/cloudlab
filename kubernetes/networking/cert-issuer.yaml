@@ -6,7 +6,7 @@ spec:
   acme:
     # CHECKME: swap for https://acme-staging-v02.api.letsencrypt.org/directory while testing
     server: https://acme-v02.api.letsencrypt.org/directory
-    email: admin@cloudlab.kerbaras.com # CHECKME
+    email: matias.pierobonm@gmail.com
     privateKeySecretRef:
       name: letsencrypt-dns01-account
     solvers:
