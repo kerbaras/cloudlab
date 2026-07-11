@@ -16,7 +16,7 @@ portSelector:
     - 6443
   protocol: tcp
 ingress:
-  - subnet: 203.0.113.7/32 # CHECKME: your current operator IP
+  - subnet: 167.56.41.41/32 # egress IP of the operator workstation (mati-mac-mini) driving the install
 ---
 apiVersion: v1alpha1
 kind: NetworkRuleConfig

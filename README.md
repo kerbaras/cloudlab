@@ -31,13 +31,14 @@ Gateway, and the policy tiers.
 
 | Where | What you must fill in |
 |---|---|
-| `talos/talconfig.yaml` | install disk, IPv4 netmask + gateway (Robot panel), tailnet MagicDNS cert SAN |
-| `talos/patches/firewall.yaml` | break-glass operator IP (deleted in Stage 2) |
 | `talos/patches/tailscale.yaml` | copied from `.example`; tagged Tailscale auth key |
-| `kubernetes/networking/cert-issuer.yaml` | ACME email, DNS-01 provider credentials ref |
-| `kubernetes/argocd/apps/*.yaml` | repo URL / target revision if you fork or rename branches |
-| `.sops.yaml` | your age recipient |
+| `kubernetes/networking/cert-issuer.yaml` | ACME contact email |
+| `kubernetes/networking/route53-credentials.sops.yaml.example` | scoped IAM key for DNS-01 |
 | DNS zone | `*.cloudlab.kerbaras.com` A → `65.21.143.224`, AAAA → edge address from `fd02::/64` (after Stage 4) |
+
+Already pinned from the live v1 box + tailnet: install disk (by serial), IPv4
+`/26` + gateway `.193`, MagicDNS SAN (`quasar.tail9639db.ts.net`), break-glass
+operator IP.
 
 ---
 
@@ -72,8 +73,10 @@ Tools: `talosctl`, `talhelper`, `kubectl`, `helm`, `cilium`, `hubble`,
    ID=$(curl -sX POST --data-binary @talos/schematic.yaml https://factory.talos.dev/schematics | jq -r .id)
    # on the rescue system:
    wget -O /tmp/talos.raw.xz "https://factory.talos.dev/image/${ID}/v1.13.6/metal-amd64.raw.xz"
-   lsblk   # confirm the system disk
-   xz -dc /tmp/talos.raw.xz | dd of=/dev/nvme0n1 bs=4M status=progress && sync
+   lsblk -o NAME,SIZE,SERIAL   # system disk = S4GENX0R517398; PV pool = S4GENX0R517494
+   # v1 ran md RAID1 across both disks — kill the superblocks or they haunt Talos:
+   mdadm --stop --scan && wipefs -af /dev/nvme0n1 /dev/nvme1n1
+   xz -dc /tmp/talos.raw.xz | dd of=/dev/disk/by-id/nvme-*S4GENX0R517398 bs=4M status=progress && sync
    reboot
    ```
 3. Talos boots into maintenance mode on `65.21.143.251`. Generate and apply:
