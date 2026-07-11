@@ -14,28 +14,28 @@ spec:
       allowedRoutes:
         namespaces:
           from: Same
-    # :443 — TLS termination for *.cloudlab.example; attachment is opt-in via
+    # :443 — TLS termination for *.cloudlab.kerbaras.com; attachment is opt-in via
     # namespace label (two-key launch)
     - name: https
       port: 443
       protocol: HTTPS
-      hostname: "*.cloudlab.example"
+      hostname: "*.cloudlab.kerbaras.com"
       tls:
         mode: Terminate
         certificateRefs:
-          - name: wildcard-cloudlab-example-tls
+          - name: wildcard-cloudlab-kerbaras-com-tls
       allowedRoutes:
         namespaces:
           from: Selector
           selector:
             matchLabels:
-              cloudlab.example/gateway-access: "true"
+              cloudlab.kerbaras.com/gateway-access: "true"
     # :6443 — TLS passthrough, SNI-routed to workload-cluster apiservers.
     # The NLB-for-control-planes; TLSRoutes arrive with Phase 3 clusters.
     - name: controlplanes
       port: 6443
       protocol: TLS
-      hostname: "*.k8s.cloudlab.example"
+      hostname: "*.k8s.cloudlab.kerbaras.com"
       tls:
         mode: Passthrough
       allowedRoutes:
@@ -43,6 +43,6 @@ spec:
           from: Selector
           selector:
             matchLabels:
-              cloudlab.example/gateway-access: "true"
+              cloudlab.kerbaras.com/gateway-access: "true"
         kinds:
           - kind: TLSRoute

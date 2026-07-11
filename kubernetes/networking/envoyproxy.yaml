@@ -12,8 +12,8 @@ spec:
         externalTrafficPolicy: Local # preserve client IPs through Cilium KPR
         labels:
           # Labels select the LB-IPAM pools (lb-pools.yaml): .224 + one fd02:: address
-          cloudlab.example/lb-pool: edge-ipv4
-          cloudlab.example/public-v6: "true"
+          cloudlab.kerbaras.com/lb-pool: edge-ipv4
+          cloudlab.kerbaras.com/public-v6: "true"
         patch:
           type: StrategicMerge
           value:

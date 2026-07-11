@@ -6,15 +6,20 @@ spec:
   acme:
     # CHECKME: swap for https://acme-staging-v02.api.letsencrypt.org/directory while testing
     server: https://acme-v02.api.letsencrypt.org/directory
-    email: admin@cloudlab.example # CHECKME
+    email: admin@cloudlab.kerbaras.com # CHECKME
     privateKeySecretRef:
       name: letsencrypt-dns01-account
     solvers:
       - dns01:
-          # CHECKME: this assumes Cloudflare DNS; swap the solver for your
-          # provider. The token secret is applied manually in README Stage 4
-          # from cloudflare-token.sops.yaml.example (never plaintext in Git).
-          cloudflare:
-            apiTokenSecretRef:
-              name: cloudflare-api-token
-              key: api-token
+          # v1 ran external-dns against Route53, so the zone is assumed to be
+          # there (CHECKME: confirm). Credentials are applied manually in
+          # README Stage 4 from route53-credentials.sops.yaml.example (never
+          # plaintext in Git); IRSA-style federation replaces them in Phase 4.
+          route53:
+            region: us-east-1
+            accessKeyIDSecretRef:
+              name: route53-credentials
+              key: access-key-id
+            secretAccessKeySecretRef:
+              name: route53-credentials
+              key: secret-access-key

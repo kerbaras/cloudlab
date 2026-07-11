@@ -9,7 +9,7 @@ Talos + firewall + Tailscale, Cilium dual-stack, LB pools, the Envoy edge
 Gateway, and the policy tiers.
 
 > [!IMPORTANT]
-> Placeholders: `cloudlab.example` (domain), `metal-01` (host),
+> Real values: `cloudlab.kerbaras.com` (domain), `quasar` (host),
 > `cloudlab-mgmt` (cluster). Before applying anything, sweep the repo:
 > `grep -rn CHECKME .`
 
@@ -37,7 +37,7 @@ Gateway, and the policy tiers.
 | `kubernetes/networking/cert-issuer.yaml` | ACME email, DNS-01 provider credentials ref |
 | `kubernetes/argocd/apps/*.yaml` | repo URL / target revision if you fork or rename branches |
 | `.sops.yaml` | your age recipient |
-| DNS zone | `*.cloudlab.example` A → `65.21.143.224`, AAAA → edge address from `fd02::/64` (after Stage 4) |
+| DNS zone | `*.cloudlab.kerbaras.com` A → `65.21.143.224`, AAAA → edge address from `fd02::/64` (after Stage 4) |
 
 ---
 
@@ -57,7 +57,7 @@ Tools: `talosctl`, `talhelper`, `kubectl`, `helm`, `cilium`, `hubble`,
    talhelper gensecret > talsecret.sops.yaml && sops -e -i talsecret.sops.yaml
    cp patches/tailscale.yaml.example patches/tailscale.yaml   # fill TS_AUTHKEY (gitignored)
    ```
-4. **DNS**: create `*.cloudlab.example. A 65.21.143.224` now; AAAA comes
+4. **DNS**: create `*.cloudlab.kerbaras.com. A 65.21.143.224` now; AAAA comes
    after Stage 4 assigns the v6 edge address.
 
 ## Stage 1 — Metal (Talos via Hetzner rescue)
@@ -81,7 +81,7 @@ Tools: `talosctl`, `talhelper`, `kubectl`, `helm`, `cilium`, `hubble`,
    cd talos
    talhelper genconfig
    talosctl apply-config --insecure -n 65.21.143.251 \
-     --file clusterconfig/cloudlab-mgmt-metal-01.yaml
+     --file clusterconfig/cloudlab-mgmt-quasar.yaml
    talosctl --talosconfig clusterconfig/talosconfig -n 65.21.143.251 bootstrap
    talosctl --talosconfig clusterconfig/talosconfig -n 65.21.143.251 kubeconfig ..
    ```
@@ -90,14 +90,14 @@ Tools: `talosctl`, `talhelper`, `kubectl`, `helm`, `cilium`, `hubble`,
 
 ## Stage 2 — Prove the tailnet, then burn the break-glass rule
 
-1. The tailscale extension registers `metal-01` on the tailnet (check the
+1. The tailscale extension registers `quasar` on the tailnet (check the
    admin console; approve the advertised route `10.96.0.0/12` if
    auto-approval didn't).
 2. **Prove** management-plane access over the tailnet before removing the
    fallback:
    ```bash
-   talosctl -n <metal-01-tailscale-ip> version
-   kubectl --server https://<metal-01-tailscale-ip>:6443 get nodes
+   talosctl -n <quasar-tailscale-ip> version
+   kubectl --server https://<quasar-tailscale-ip>:6443 get nodes
    ```
 3. Point your configs at the tailnet permanently: edit `talosconfig`
    endpoints and the kubeconfig `server:` to the MagicDNS name (it is in the
@@ -107,7 +107,7 @@ Tools: `talosctl`, `talhelper`, `kubectl`, `helm`, `cilium`, `hubble`,
    marked `00-break-glass`), regenerate, re-apply:
    ```bash
    talhelper genconfig && talosctl -n <tailscale-ip> apply-config \
-     --file clusterconfig/cloudlab-mgmt-metal-01.yaml
+     --file clusterconfig/cloudlab-mgmt-quasar.yaml
    ```
 5. Verify from a network that is neither the tailnet nor your operator IP:
    `nc -vz 65.21.143.251 50000` and `:6443` must time out.
@@ -126,7 +126,7 @@ cilium status --wait
 Verify dual-stack before continuing:
 
 ```bash
-kubectl get node metal-01 -o jsonpath='{.spec.podCIDRs}'   # 10.244/24 + fd01::/64 slice
+kubectl get node quasar -o jsonpath='{.spec.podCIDRs}'   # 10.244/24 + fd01::/64 slice
 kubectl run tmp --rm -it --image=nicolaka/netshoot -- bash
   ip -6 addr                     # pod holds a GUA from 2a01:4f9:3b:fd01::/64
   curl -4 ifconfig.co            # egress = 65.21.143.251 (SNAT)
@@ -165,18 +165,18 @@ until Stage 5 flips the switch.
 | `nmap -sS -p- 65.21.143.251` | all TCP filtered |
 | `nmap -sU -p 41641 65.21.143.251` | open\|filtered (Tailscale) |
 | `nmap -sS -p- 65.21.143.224` | exactly 80, 443, 6443 open |
-| `curl -I http://anything.cloudlab.example` | `301` → https |
-| `curl -v https://anything.cloudlab.example` | valid `*.cloudlab.example` cert (404 body is fine — nothing is routed yet) |
-| `curl -6 -I https://anything.cloudlab.example` | same, over the AAAA |
+| `curl -I http://anything.cloudlab.kerbaras.com` | `301` → https |
+| `curl -v https://anything.cloudlab.kerbaras.com` | valid `*.cloudlab.kerbaras.com` cert (404 body is fine — nothing is routed yet) |
+| `curl -6 -I https://anything.cloudlab.kerbaras.com` | same, over the AAAA |
 | `ping6 <any pod GUA from fd01::/64>` | silence; Hubble logs `world → pod DROP` |
 
 **From the tailnet:**
 
 | Check | Expectation |
 |---|---|
-| `talosctl -n metal-01 version` / `kubectl get nodes` | works over MagicDNS |
+| `talosctl -n quasar version` / `kubectl get nodes` | works over MagicDNS |
 | `curl <any ClusterIP>` from your laptop | works (advertised Service CIDR) |
-| Tailscale admin console | `metal-01` has no ACL grant toward other devices |
+| Tailscale admin console | `quasar` has no ACL grant toward other devices |
 
 **Policy audit → enforce:** run for a few days, watching
 `hubble observe --verdict AUDIT` for legitimate flows you forgot to allow.

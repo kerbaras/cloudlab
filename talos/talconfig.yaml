@@ -17,7 +17,7 @@ clusterSvcNets:
 additionalApiServerCertSans: &sans
   - 65.21.143.251
   - 2a01:4f9:3b:2d44::1
-  - metal-01.CHECKME.ts.net # CHECKME: MagicDNS name once the host joins the tailnet
+  - quasar.CHECKME.ts.net # CHECKME: MagicDNS name once the host joins the tailnet
 additionalMachineCertSans: *sans
 patches:
   - "@./patches/cluster.yaml"
@@ -25,7 +25,7 @@ patches:
   - "@./patches/firewall.yaml"
   - "@./patches/tailscale.yaml" # gitignored copy of tailscale.yaml.example (holds TS_AUTHKEY)
 nodes:
-  - hostname: metal-01
+  - hostname: quasar
     ipAddress: 65.21.143.251
     controlPlane: true
     installDisk: /dev/nvme0n1 # CHECKME: confirm the system disk with lsblk in rescue mode (§9: nvme1n1 stays untouched as the LVM PV pool)

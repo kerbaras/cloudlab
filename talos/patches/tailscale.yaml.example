@@ -6,6 +6,6 @@ kind: ExtensionServiceConfig
 name: tailscale
 environment:
   - TS_AUTHKEY=tskey-auth-CHECKME # tagged tag:cloudlab-host, from the admin console
-  - TS_HOSTNAME=metal-01
+  - TS_HOSTNAME=quasar
   - TS_ROUTES=10.96.0.0/12,fd63:6c6f:7564::/108
   - TS_ACCEPT_DNS=false

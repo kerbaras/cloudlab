@@ -10,7 +10,7 @@ spec:
     - cidr: 65.21.143.224/32 # the one-address v4 prison
   serviceSelector:
     matchLabels:
-      cloudlab.example/lb-pool: edge-ipv4
+      cloudlab.kerbaras.com/lb-pool: edge-ipv4
 ---
 apiVersion: cilium.io/v2
 kind: CiliumLoadBalancerIPPool
@@ -21,4 +21,4 @@ spec:
     - cidr: 2a01:4f9:3b:fd02::/64 # mgmt LB pool (fd02 = cluster 0, role 2)
   serviceSelector:
     matchLabels:
-      cloudlab.example/public-v6: "true"
+      cloudlab.kerbaras.com/public-v6: "true"

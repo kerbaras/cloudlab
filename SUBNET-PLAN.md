@@ -10,8 +10,8 @@ ranges. Rationale lives in [`ARCHITECTURE.md`](./ARCHITECTURE.md) §5.
 
 | Address | Role | Holder | Notes |
 |---|---|---|---|
-| `65.21.143.251` | Dark mgmt host | Talos `metal-01` uplink | Answers exactly one UDP port (Tailscale `41641`) to the internet. Pod v4 egress SNATs to this address. |
-| `65.21.143.224` | Public data-plane edge | Cilium LB-IPAM pool `edge-ipv4` (one address) | Claimable only by a Service labeled `cloudlab.example/lb-pool: edge-ipv4` — in practice, the edge Gateway. Ports 80/443/6443. Routed to primary MAC (no virtual MAC ordered — revisit in Phase 2). |
+| `65.21.143.251` | Dark mgmt host | Talos `quasar` uplink | Answers exactly one UDP port (Tailscale `41641`) to the internet. Pod v4 egress SNATs to this address. |
+| `65.21.143.224` | Public data-plane edge | Cilium LB-IPAM pool `edge-ipv4` (one address) | Claimable only by a Service labeled `cloudlab.kerbaras.com/lb-pool: edge-ipv4` — in practice, the edge Gateway. Ports 80/443/6443. Routed to primary MAC (no virtual MAC ordered — revisit in Phase 2). |
 
 There is no third IPv4. That is the security model working as intended.
 
@@ -21,7 +21,7 @@ There is no third IPv4. That is the security model working as intended.
 
 | Prefix | Role |
 |---|---|
-| `2a01:4f9:3b:2d44::/64` | Host uplink only. `metal-01` = `2a01:4f9:3b:2d44::1`. Gateway `fe80::1`. Nothing else lives here. |
+| `2a01:4f9:3b:2d44::/64` | Host uplink only. `quasar` = `2a01:4f9:3b:2d44::1`. Gateway `fe80::1`. Nothing else lives here. |
 
 ### 2.2 Routed /56 (the addressing plane)
 
@@ -50,7 +50,7 @@ A packet capture is self-describing.
 Reachability rules: `fdN1` pod addresses are natively routable but
 **policy-dark** (world ingress dropped at the veth, proof in Hubble). The only
 publicly *served* v6 addresses come from `fdN2` pools, entered by labeling a
-Service `cloudlab.example/public-v6: "true"` in Git.
+Service `cloudlab.kerbaras.com/public-v6: "true"` in Git.
 
 ## 3. Virtual ranges (never routed, never public)
 
@@ -65,9 +65,9 @@ Service `cloudlab.example/public-v6: "true"` in Git.
 
 | Name | Record | Target |
 |---|---|---|
-| `*.cloudlab.example` | A / AAAA | `65.21.143.224` / edge address from `fd02::/64` |
-| `<cluster>.k8s.cloudlab.example` | A / AAAA | Same edge addresses (SNI passthrough on :6443) |
-| `metal-01.cloudlab.example` | — | Deliberately unpublished; host access rides the tailnet (MagicDNS) |
+| `*.cloudlab.kerbaras.com` | A / AAAA | `65.21.143.224` / edge address from `fd02::/64` |
+| `<cluster>.k8s.cloudlab.kerbaras.com` | A / AAAA | Same edge addresses (SNI passthrough on :6443) |
+| `quasar.cloudlab.kerbaras.com` | A (legacy v1) | Host access rides the tailnet (MagicDNS); this record is safe to delete after README Stage 2 |
 
 AAAA-first: every published name gets an AAAA; A records are the compatibility
 shim. Manual records in Phase 1; external-dns assumes custody in Phase 4.
@@ -78,8 +78,8 @@ shim. Manual records in Phase 1; external-dns assumes custody in Phase 4.
 |---|---|---|---|
 | `65.21.143.251` | `41641` | UDP | Tailscale (direct connections) |
 | `65.21.143.224` + `fd02::/64` pool | `80` | TCP | Edge — permanent 301 |
-| 〃 | `443` | TCP | Edge — TLS terminate `*.cloudlab.example` |
-| 〃 | `6443` | TCP | Edge — TLS passthrough `*.k8s.cloudlab.example` |
+| 〃 | `443` | TCP | Edge — TLS terminate `*.cloudlab.kerbaras.com` |
+| 〃 | `6443` | TCP | Edge — TLS passthrough `*.k8s.cloudlab.kerbaras.com` |
 
 Everything else is dropped by the Talos ingress firewall (host-destined) or
 Cilium policy (pod/LB-destined) before it reaches a socket.

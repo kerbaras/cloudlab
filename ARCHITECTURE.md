@@ -5,7 +5,7 @@ a single Hetzner dedicated server operated as if it were a small cloud provider.
 Companion docs: [`SUBNET-PLAN.md`](./SUBNET-PLAN.md) (the addressing contract) and
 [`README.md`](./README.md) (rollout runbook for the network baseline).
 
-Placeholders used throughout: `cloudlab.example` (domain), `metal-01` (host),
+Real values throughout: `cloudlab.kerbaras.com` (domain), `quasar` (host),
 `cloudlab-mgmt` (management cluster). Grep `CHECKME` in manifests before applying.
 
 ---
@@ -70,13 +70,13 @@ deliberately have not — see Phase 2).
 
 | AWS concept | Cloudlab implementation |
 |---|---|
-| Region / AZ | `metal-01`. There is exactly one, and it reboots sometimes. |
+| Region / AZ | `quasar`. There is exactly one, and it reboots sometimes. |
 | EC2 | KubeVirt `VirtualMachine` CRs (KVM direct on metal, no nesting) |
 | EKS | Cluster API + KubeVirt infra provider + Sidero Talos providers (CABPT/CACPPT); Talos-in-VM workload clusters |
 | EKS-lite / ephemeral | vCluster (~500 MB vs ~6 GB for a VM-backed cluster) |
 | VPC | Per-cluster `/64` trio (`fdN0` nodes / `fdN1` pods / `fdN2` LB) + Multus bridges (Phase 2) |
 | Security Groups | Four distributed enforcement planes (§6.2) — Talos nftables, Cilium eBPF identity policy, LB-IPAM pool selectors, Tailscale ACLs |
-| NLB (control planes) | Envoy Gateway `:6443` listener, TLS/SNI passthrough to `*.k8s.cloudlab.example` |
+| NLB (control planes) | Envoy Gateway `:6443` listener, TLS/SNI passthrough to `*.k8s.cloudlab.kerbaras.com` |
 | Elastic IP / public addressing | Cilium LB-IPAM pools: one-address v4 prison, opt-in v6 /64 |
 | Route 53 | external-dns, AAAA-first, on a real domain; cert-manager DNS-01 wildcards |
 | IAM (humans) | Zitadel OIDC + apiserver structured `AuthenticationConfiguration` + kubelogin |
@@ -164,10 +164,10 @@ CNI/system experiments; vClusters for everything else.
 One Gateway (`edge`), one public IPv4, three listeners:
 
 - `:80` — permanent 301 to HTTPS.
-- `:443` — TLS termination for `*.cloudlab.example` (cert-manager wildcard via
+- `:443` — TLS termination for `*.cloudlab.kerbaras.com` (cert-manager wildcard via
   DNS-01); routes attach only from namespaces labeled
-  `cloudlab.example/gateway-access: "true"` — exposure is a two-key launch.
-- `:6443` — TLS **passthrough**, SNI-routed: `cluster-a.k8s.cloudlab.example`
+  `cloudlab.kerbaras.com/gateway-access: "true"` — exposure is a two-key launch.
+- `:6443` — TLS **passthrough**, SNI-routed: `cluster-a.k8s.cloudlab.kerbaras.com`
   reaches cluster-a's apiserver with its own certs and auth intact. This is
   the NLB-for-control-planes on a single address.
 
@@ -306,7 +306,7 @@ Admin → mgmt apiserver:
   laptop → tailnet → tailscale0 → host :6443   [nftables allows 100.64/10]
 
 Admin → workload apiserver:
-  cluster-a.k8s.cloudlab.example:6443 → .224 → Envoy TLSRoute (SNI,
+  cluster-a.k8s.cloudlab.kerbaras.com:6443 → .224 → Envoy TLSRoute (SNI,
   passthrough) → CP VM apiserver   [cluster's own certs/authn intact]
 
 Tailnet → VM SSH:
