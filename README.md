@@ -37,8 +37,7 @@ Gateway, and the policy tiers.
 | DNS zone | `*.cloudlab.kerbaras.com` A → `65.21.143.224`, AAAA → edge address from `fd02::/64` (after Stage 4) |
 
 Already pinned from the live v1 box + tailnet: install disk (by serial), IPv4
-`/26` + gateway `.193`, MagicDNS SAN (`quasar.tail9639db.ts.net`), break-glass
-operator IP.
+`/26` + gateway `.193`, MagicDNS SAN (`quasar.tail9639db.ts.net`).
 
 ---
 
@@ -89,33 +88,36 @@ Tools: `talosctl`, `talhelper`, `kubectl`, `helm`, `cilium`, `hubble`,
    talosctl --talosconfig clusterconfig/talosconfig -n 65.21.143.251 kubeconfig ..
    ```
 4. Expected state: node `NotReady` (no CNI yet — deliberate), firewall
-   default-block active with the break-glass rule admitting your operator IP.
+   default-block active; the management planes (`:50000`, `:6443`) answer
+   mutual TLS from anywhere (decision #14).
 
-## Stage 2 — Prove the tailnet, then burn the break-glass rule
+> [!NOTE]
+> **As built:** quasar v2 was installed without rescue mode at all — kexec
+> from the running v1 Debian into the Talos initramfs (RAM-only), then
+> `apply-config`; the installer rewrote the disk. Rescue + `dd` remains the
+> documented recovery path.
 
-1. The tailscale extension registers `quasar` on the tailnet (check the
-   admin console; approve the advertised route `10.96.0.0/12` if
-   auto-approval didn't).
-2. **Prove** management-plane access over the tailnet before removing the
-   fallback:
+## Stage 2 — Join the tailnet (ergonomics, not the floor)
+
+The management floor is decision #14: apid/apiserver are internet-open behind
+mutual TLS, with the operator-managed **Robot firewall** as the IP allowlist
+(restrict `dst 65.21.143.251` + `tcp 50000,6443` there; leave edge and return
+traffic alone). The tailnet is the *preferred* path on top of that floor.
+
+1. The tailscale extension registers `quasar` on the tailnet. With a tagged
+   auth key in `talos/patches/tailscale.yaml` this is automatic; without one
+   (as built) grab the interactive login URL from
+   `talosctl logs ext-tailscale` — take the **latest** URL, the extension
+   regenerates it on its retry loop, and a stale click registers a ghost node.
+2. Approve the advertised route `10.96.0.0/12` in the admin console; run
+   `tailscale set --accept-routes=true` on admin devices.
+3. Verify over the tailnet:
    ```bash
-   talosctl -n <quasar-tailscale-ip> version
-   kubectl --server https://<quasar-tailscale-ip>:6443 get nodes
+   talosctl -e <quasar-tailscale-ip> -n <quasar-tailscale-ip> version
+   kubectl --server https://quasar.<tailnet>.ts.net:6443 get nodes
    ```
-3. Point your configs at the tailnet permanently: edit `talosconfig`
-   endpoints and the kubeconfig `server:` to the MagicDNS name (it is in the
-   cert SANs via `talos/talconfig.yaml`).
-4. Delete the break-glass document from
-   [`talos/patches/firewall.yaml`](./talos/patches/firewall.yaml) (the block
-   marked `00-break-glass`), regenerate, re-apply:
-   ```bash
-   talhelper genconfig && talosctl -n <tailscale-ip> apply-config \
-     --file clusterconfig/cloudlab-mgmt-quasar.yaml
-   ```
-5. Verify from a network that is neither the tailnet nor your operator IP:
-   `nc -vz 65.21.143.251 50000` and `:6443` must time out.
-
-Lockout after this point costs a rescue-mode reinstall (~30 min), not the box.
+4. Optionally point `talosconfig`/kubeconfig at the MagicDNS name (it is in
+   the cert SANs via `talos/talconfig.yaml`).
 
 ## Stage 3 — Cilium (the one bootstrap-installed layer)
 
@@ -168,7 +170,7 @@ until Stage 5 flips the switch.
 
 | Check | Expectation |
 |---|---|
-| `nmap -sS -p- 65.21.143.251` | all TCP filtered |
+| `nmap -sS -p- 65.21.143.251` | only `50000` + `6443` open (both TLS-authenticated); rest filtered |
 | `nmap -sU -p 41641 65.21.143.251` | open\|filtered (Tailscale) |
 | `nmap -sS -p- 65.21.143.224` | exactly 80, 443, 6443 open |
 | `curl -I http://anything.cloudlab.kerbaras.com` | `301` → https |
@@ -199,5 +201,6 @@ Phase 1 is done when every row above passes. Next: Phase 2/3 per
   genconfig` + bootstrap): ~30 minutes to a bare mgmt cluster.
 - **etcd** → `talosctl etcd snapshot db.snapshot` periodically, shipped
   off-box; everything else reconstructs from this repo.
-- **Locked out of the firewall** → rescue mode; the break-glass rule only
-  exists between Stages 1 and 2 by design.
+- **Locked out** → IP-allowlist mistakes live in the Robot firewall and are
+  fixed from any browser; only a broken Talos firewall config costs a
+  rescue-mode reinstall.

@@ -10,7 +10,7 @@ ranges. Rationale lives in [`ARCHITECTURE.md`](./ARCHITECTURE.md) §5.
 
 | Address | Role | Holder | Notes |
 |---|---|---|---|
-| `65.21.143.251` | Dark mgmt host | Talos `quasar` uplink | Answers exactly one UDP port (Tailscale `41641`) to the internet. Pod v4 egress SNATs to this address. |
+| `65.21.143.251` | Mgmt host | Talos `quasar` uplink | Answers Tailscale (`41641/udp`) and the mTLS management planes (`50000`, `6443`) to the internet (decision #14); the Robot firewall is the operator allowlist. Pod v4 egress SNATs to this address. |
 | `65.21.143.224` | Public data-plane edge | Cilium LB-IPAM pool `edge-ipv4` (one address) | Claimable only by a Service labeled `cloudlab.kerbaras.com/lb-pool: edge-ipv4` — in practice, the edge Gateway. Ports 80/443/6443. Routed to primary MAC (no virtual MAC ordered — revisit in Phase 2). |
 
 There is no third IPv4. That is the security model working as intended.
@@ -77,6 +77,8 @@ shim. Manual records in Phase 1; external-dns assumes custody in Phase 4.
 | Address | Port | Protocol | Service |
 |---|---|---|---|
 | `65.21.143.251` | `41641` | UDP | Tailscale (direct connections) |
+| 〃 | `50000` | TCP | Talos apid — mutual TLS (Robot firewall narrows) |
+| 〃 | `6443` | TCP | kube-apiserver — TLS + authn (Robot firewall narrows) |
 | `65.21.143.224` + `fd02::/64` pool | `80` | TCP | Edge — permanent 301 |
 | 〃 | `443` | TCP | Edge — TLS terminate `*.cloudlab.kerbaras.com` |
 | 〃 | `6443` | TCP | Edge — TLS passthrough `*.k8s.cloudlab.kerbaras.com` |

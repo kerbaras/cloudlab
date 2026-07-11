@@ -227,7 +227,8 @@ this repo is the single source of truth.
 
 Full contract in [`SUBNET-PLAN.md`](./SUBNET-PLAN.md). The philosophy:
 
-- **IPv4 is scarce → structural.** `.251` is the dark mgmt host; `.224` lives
+- **IPv4 is scarce → structural.** `.251` is the mgmt host (authenticated
+  planes only); `.224` lives
   in a one-address LB-IPAM pool claimable only by the edge Gateway's Service.
   No rule review can leak public v4, because there is nothing to leak.
 - **IPv6 is abundant → declared.** Pods hold GUAs from `fd01::/64` (native
@@ -247,7 +248,10 @@ Full contract in [`SUBNET-PLAN.md`](./SUBNET-PLAN.md). The philosophy:
 
 ### 6.1 Invariants
 
-1. `.251` answers exactly one UDP port to the internet.
+1. `.251` answers only Tailscale (UDP `41641`) and the mutually-authenticated
+   management planes (apid `:50000`, apiserver `:6443`) to the internet;
+   IP allowlisting for those is delegated to the operator-managed Robot
+   firewall (decision #14).
 2. `.224` is the only public IPv4 surface and only the edge Gateway can hold it.
 3. The /56 is dark by default; the declared surface is a labeled, Git-reviewed
    LB pool.
@@ -392,10 +396,10 @@ fate with one kernel, one PSU, one NVMe pair.
 
 - **Host loss / bricked config** → Hetzner rescue mode, `dd` factory image,
   `talhelper genconfig`, apply, bootstrap: ~30 minutes to a bare mgmt cluster.
-- **Lockout protection** → the firewall ships with a break-glass rule
-  (operator IP → apid/apiserver) that is only deleted after tailnet access is
-  *proven* (README Stage 2). Post-deletion mistakes cost a rescue-mode trip,
-  not the box.
+- **Lockout protection** → management endpoints are internet-open behind
+  mutual TLS (decision #14); the IP allowlist lives in the Robot firewall,
+  editable from any browser. A dynamic operator IP cannot cause a lockout;
+  a Talos firewall misconfig still costs only a rescue-mode trip.
 - **etcd** → periodic `talosctl etcd snapshot` shipped off-box; mgmt cluster
   state is otherwise reconstructable from this repo.
 - **Workload clusters** → cattle by construction: CAPI re-stamps them; their
@@ -423,6 +427,7 @@ fate with one kernel, one PSU, one NVMe pair.
 | 11 | kro platform API | Crossplane compositions | Lighter; Crossplane reserved for external providers only | External resources (Cloudflare, hcloud burst) enter scope |
 | 12 | SaaS Tailscale | Headscale | Zero control-plane ops now; sovereignty is a later itch | The itch |
 | 13 | Flux | ArgoCD | Native SOPS decryption, pull-based, ~700 MB lighter; v1's endgame was already a Flux migration; cluster stamping moves to kro+Flux templates | A console need arises (Headlamp/Capacitor) |
+| 14 | Internet-open mTLS mgmt endpoints | Talos-firewall IP pinning; tailnet-only mgmt | Operator egress IP is dynamic → pinning is a lockout timer; apid/apiserver are mutually-authenticated TLS; allowlisting delegated to the browser-editable Robot firewall | Static operator egress, or Tailscale API-server proxy assumes the role |
 
 ---
 

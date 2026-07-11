@@ -1,22 +1,14 @@
 # Talos ingress firewall (ARCHITECTURE.md §6.2, host-destined plane).
 # Deliberately NO 80/443/6443-edge rules: LB traffic is intercepted by Cilium
 # eBPF upstream of nftables — rules here would be dead code implying coverage.
+#
+# Management endpoints (apid :50000, apiserver :6443) are internet-open by
+# decision #14: both are mutually-authenticated TLS, the operator egress IP is
+# dynamic, and IP allowlisting is delegated to the Hetzner Robot firewall
+# (editable from any browser — no lockout risk).
 apiVersion: v1alpha1
 kind: NetworkDefaultActionConfig
 ingress: block
----
-# 00-break-glass: DELETE THIS DOCUMENT in README Stage 2, after tailnet access
-# is proven. Until then it is the anti-lockout fallback.
-apiVersion: v1alpha1
-kind: NetworkRuleConfig
-name: 00-break-glass
-portSelector:
-  ports:
-    - 50000
-    - 6443
-  protocol: tcp
-ingress:
-  - subnet: 167.56.41.41/32 # egress IP of the operator workstation (mati-mac-mini) driving the install
 ---
 apiVersion: v1alpha1
 kind: NetworkRuleConfig
@@ -31,23 +23,25 @@ ingress:
 ---
 apiVersion: v1alpha1
 kind: NetworkRuleConfig
-name: 20-apid-tailnet
+name: 20-apid
 portSelector:
   ports:
     - 50000
   protocol: tcp
 ingress:
-  - subnet: 100.64.0.0/10
+  - subnet: 0.0.0.0/0 # mTLS; Robot firewall narrows (decision #14)
+  - subnet: ::/0
 ---
 apiVersion: v1alpha1
 kind: NetworkRuleConfig
-name: 21-kubeapi-tailnet
+name: 21-kubeapi
 portSelector:
   ports:
     - 6443
   protocol: tcp
 ingress:
-  - subnet: 100.64.0.0/10
+  - subnet: 0.0.0.0/0 # TLS + authn; Robot firewall narrows (decision #14)
+  - subnet: ::/0
 ---
 # Cluster-internal: pods reaching host services (kubelet 10250, cilium health
 # 4240, hubble 4244/4245, …). Pods are policed by Cilium identity policy;
