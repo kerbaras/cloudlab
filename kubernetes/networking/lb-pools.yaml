@@ -18,7 +18,11 @@ metadata:
   name: public-ipv6
 spec:
   blocks:
-    - cidr: 2a01:4f9:3b:fd02::/64 # mgmt LB pool (fd02 = cluster 0, role 2)
+    # mgmt LB pool (fd02 = cluster 0, role 2); starts at ::1 to skip the
+    # subnet-router anycast address (::0), which parts of the internet
+    # special-case or drop.
+    - start: 2a01:4f9:3b:fd02::1
+      stop: 2a01:4f9:3b:fd02::ffff
   serviceSelector:
     matchLabels:
       cloudlab.kerbaras.com/public-v6: "true"
