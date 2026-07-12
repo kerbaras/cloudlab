@@ -362,7 +362,8 @@ engine), `identity` (OIDC publication + pod-identity injection, #17),
 `external-dns`, `monitoring` (#18), `cloudnative-pg`, and `tailscale`
 (operator). `apps/` gained `openbao` (L6 secret custody; keyless awskms
 auto-unseal via #17's pod identity — Phase 4 begins), sitting beside its
-IdP sibling `zitadel`. Gateway-level OIDC (L6 flow 2) fronts the auth-less
+IdP sibling `zitadel`, and `kite` (cluster console; Zitadel OAuth, config
+pinned from Git). Gateway-level OIDC (L6 flow 2) fronts the auth-less
 observability UIs via Envoy SecurityPolicy.
 
 Note: `clusters/` here means *workload clusters as products* (L3), a

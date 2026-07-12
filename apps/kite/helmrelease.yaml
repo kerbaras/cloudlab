@@ -1,0 +1,98 @@
+# Kite: the cluster console. Deliberate trade-off vs Headlamp-style OIDC
+# passthrough: Kite acts with its own (cluster-admin) ServiceAccount and
+# gates humans through its own auth layer. Mitigations: config-file mode
+# pins OAuth/RBAC/clusters from Git (read-only in the UI, write APIs 403),
+# login is Zitadel (L6 flow 2 — no parallel password store), and the only
+# local account is a sops-held break-glass superuser.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: kite
+  namespace: flux-system
+spec:
+  interval: 30m
+  targetNamespace: kite
+  releaseName: kite
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  chart:
+    spec:
+      chart: kite
+      version: 0.13.0
+      sourceRef:
+        kind: HelmRepository
+        name: kite
+        namespace: flux-system
+  values:
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        memory: 384Mi
+    db:
+      type: sqlite
+      sqlite:
+        persistence:
+          pvc:
+            enabled: true # users/audit/history on lvm-thin (default SC)
+            size: 1Gi
+    # secrets arrive as env vars (kite-secrets.sops.yaml) and are expanded
+    # into the ${...} placeholders below at startup
+    extraEnvs:
+      - name: JWT_SECRET
+        valueFrom:
+          secretKeyRef: { name: kite-secrets, key: jwt-secret }
+      - name: KITE_ENCRYPT_KEY
+        valueFrom:
+          secretKeyRef: { name: kite-secrets, key: encrypt-key }
+      - name: SUPERUSER_PASSWORD
+        valueFrom:
+          secretKeyRef: { name: kite-secrets, key: superuser-password }
+      - name: OAUTH_CLIENT_SECRET
+        valueFrom:
+          secretKeyRef: { name: kite-secrets, key: oauth-client-secret }
+      - name: HOST # OAuth callback host (behind the edge gateway)
+        value: https://kite.cloudlab.kerbaras.com
+    config:
+      enabled: true # Git-managed; these sections go read-only in the UI
+      superUser:
+        username: break-glass
+        password: "${SUPERUSER_PASSWORD}"
+      clusters:
+        - name: cloudlab-mgmt
+          inCluster: true
+          default: true
+          # vmsingle speaks the Prometheus query API — charts light up free
+          prometheusURL: http://vmsingle-vm-victoria-metrics-k8s-stack.monitoring.svc.cluster.local:8428
+      oauth:
+        # CHECKME: create a "kite" web app (authorization code) in the same
+        # Zitadel project as the "kubernetes" app so the roles→groups Action
+        # applies; redirect URI https://kite.cloudlab.kerbaras.com/api/auth/callback.
+        # Pin the client ID here and put the secret in kite-secrets.sops.yaml.
+        - name: zitadel
+          clientId: "CHECKME"
+          clientSecret: "${OAUTH_CLIENT_SECRET}"
+          issuer: https://auth.cloudlab.kerbaras.com
+          scopes: openid,profile,email
+          usernameClaim: email
+          groupsClaim: groups
+          enabled: true
+      rbac:
+        roles:
+          - name: admin
+            description: Full access
+            clusters: ["*"]
+            namespaces: ["*"]
+            resources: ["*"]
+            verbs: ["*"]
+        roleMapping:
+          # same Zitadel project role that RBAC-binds oidc:admin on the
+          # apiserver (system/identity/rbac.yaml) — one admin group, two
+          # relying parties
+          - name: admin
+            oidcGroups: ["admin"]
