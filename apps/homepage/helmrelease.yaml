@@ -25,7 +25,7 @@ spec:
       name: homepage
     env:
       - name: HOMEPAGE_ALLOWED_HOSTS
-        value: home.cloudlab.kerbaras.com
+        value: cloudlab.kerbaras.com
     config:
       kubernetes:
         mode: cluster

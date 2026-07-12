@@ -9,14 +9,14 @@ metadata:
     gethomepage.dev/group: Platform
     gethomepage.dev/icon: zitadel.png
     gethomepage.dev/description: Identity provider (humans & workloads)
-    gethomepage.dev/href: https://zitadel.cloudlab.kerbaras.com
+    gethomepage.dev/href: https://auth.cloudlab.kerbaras.com
 spec:
   parentRefs:
     - name: edge
       namespace: edge
       sectionName: https
   hostnames:
-    - zitadel.cloudlab.kerbaras.com
+    - auth.cloudlab.kerbaras.com
   rules:
     # login UI v2 (plain http/1.1)
     - matches:

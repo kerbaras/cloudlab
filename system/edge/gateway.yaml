@@ -30,6 +30,22 @@ spec:
           selector:
             matchLabels:
               cloudlab.kerbaras.com/gateway-access: "true"
+    # :443 apex — the wildcard listener can't match the bare domain; the cert
+    # already carries both SANs. Homepage lives here.
+    - name: https-apex
+      port: 443
+      protocol: HTTPS
+      hostname: cloudlab.kerbaras.com
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - name: wildcard-cloudlab-kerbaras-com-tls
+      allowedRoutes:
+        namespaces:
+          from: Selector
+          selector:
+            matchLabels:
+              cloudlab.kerbaras.com/gateway-access: "true"
     # :6443 — TLS passthrough, SNI-routed to workload-cluster apiservers.
     # The NLB-for-control-planes; TLSRoutes arrive with Phase 3 clusters.
     - name: controlplanes

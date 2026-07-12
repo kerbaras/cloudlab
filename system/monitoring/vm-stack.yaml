@@ -61,3 +61,19 @@ spec:
       grafana.ini:
         server:
           root_url: https://grafana.cloudlab.kerbaras.com
+        # Zitadel SSO (decision #17's human half): PKCE public client — no
+        # secret exists, so this whole block is safely plaintext in Git.
+        auth.generic_oauth:
+          enabled: true
+          name: Zitadel
+          allow_sign_up: true
+          client_id: "381411174509510690"
+          scopes: openid profile email
+          auth_url: https://auth.cloudlab.kerbaras.com/oauth/v2/authorize
+          token_url: https://auth.cloudlab.kerbaras.com/oauth/v2/token
+          api_url: https://auth.cloudlab.kerbaras.com/oidc/v1/userinfo
+          use_pkce: true
+          email_attribute_path: email
+          login_attribute_path: preferred_username
+          name_attribute_path: name
+          skip_org_role_sync: true # promote users in Grafana; Zitadel role mapping later

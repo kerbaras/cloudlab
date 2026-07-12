@@ -7,9 +7,9 @@ spec:
   parentRefs:
     - name: edge
       namespace: edge
-      sectionName: https
+      sectionName: https-apex
   hostnames:
-    - home.cloudlab.kerbaras.com
+    - cloudlab.kerbaras.com
   rules:
     - backendRefs:
         - name: homepage
