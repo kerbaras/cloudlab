@@ -3,7 +3,11 @@
 // tailnet devices (no rule with src tag:cloudlab-host — allowlist semantics).
 {
 	"tagOwners": {
-		"tag:cloudlab-host": ["autogroup:admin"],
+		"tag:cloudlab-host":  ["autogroup:admin"],
+		// k8s operator (its OAuth client carries tag:k8s-operator); devices it
+		// creates for exposed Services get tag:k8s
+		"tag:k8s-operator":   ["autogroup:admin"],
+		"tag:k8s":            ["tag:k8s-operator"],
 	},
 
 	"acls": [
@@ -18,6 +22,12 @@
 			"action": "accept",
 			"src":    ["autogroup:admin"],
 			"dst":    ["10.96.0.0/12:*", "fd63:6c6f:7564::/108:*"],
+		},
+		// admins → per-Service tailnet devices created by the k8s operator
+		{
+			"action": "accept",
+			"src":    ["autogroup:admin"],
+			"dst":    ["tag:k8s:*"],
 		},
 	],
 
