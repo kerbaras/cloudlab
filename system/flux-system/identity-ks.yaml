@@ -1,0 +1,23 @@
+# IRSA-at-home: public OIDC discovery mirror + Kyverno pod-identity policy.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: identity
+  namespace: flux-system
+spec:
+  interval: 10m
+  retryInterval: 2m
+  path: ./system/identity
+  prune: true
+  wait: true
+  dependsOn:
+    - name: kyverno # ClusterPolicy CRD
+    - name: envoy-gateway-system # HTTPRoute CRD
+    - name: edge # the Gateway the route attaches to
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-kms
+  sourceRef:
+    kind: GitRepository
+    name: flux-system

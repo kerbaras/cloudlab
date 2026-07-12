@@ -9,3 +9,4 @@ resources:
   - edge-ks.yaml
   - openebs-ks.yaml
   - kyverno-ks.yaml
+  - identity-ks.yaml

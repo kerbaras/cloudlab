@@ -1,0 +1,109 @@
+# Publishes the cluster's SA-issuer OIDC discovery + JWKS at
+# https://oidc.cloudlab.kerbaras.com (ARCHITECTURE.md L6 flow 3 — the same
+# trick as EKS IRSA). Talos disables anonymous apiserver auth, so a mirror
+# fetches the two documents with its own SA token (the default
+# system:service-account-issuer-discovery binding covers all SAs) and nginx
+# serves static copies. Refreshed hourly; keys only change on manual talsecret
+# rotation or a rebuild.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: oidc-mirror
+  namespace: identity
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: oidc-mirror
+  namespace: identity
+data:
+  fetch.sh: |
+    #!/bin/sh
+    CA=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+    TOKEN=/var/run/secrets/kubernetes.io/serviceaccount/token
+    API=https://kubernetes.default.svc
+    mkdir -p /www/.well-known /www/openid/v1
+    fetch() {
+      curl -sf --cacert "$CA" -H "Authorization: Bearer $(cat $TOKEN)" \
+        "$API$1" -o "/www$1.tmp" && mv "/www$1.tmp" "/www$1"
+    }
+    fetch /.well-known/openid-configuration && fetch /openid/v1/jwks
+  nginx.conf: |
+    pid /tmp/nginx.pid;
+    events {}
+    http {
+      # extension-less JSON documents; allow STS to cache (no no-cache headers)
+      default_type application/json;
+      server {
+        listen 8080;
+        root /www;
+        add_header Cache-Control "public, max-age=3600";
+        location = /healthz { default_type text/plain; return 200 'ok'; }
+      }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oidc-mirror
+  namespace: identity
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: oidc-mirror
+  template:
+    metadata:
+      labels:
+        app: oidc-mirror
+    spec:
+      serviceAccountName: oidc-mirror
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        - name: seed
+          image: curlimages/curl:8.16.0
+          command: ["/bin/sh", "/conf/fetch.sh"]
+          securityContext: &sec
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+          volumeMounts: &fetchmounts
+            - { name: www, mountPath: /www }
+            - { name: conf, mountPath: /conf }
+      containers:
+        - name: nginx
+          image: nginxinc/nginx-unprivileged:1.29-alpine
+          ports:
+            - containerPort: 8080
+          securityContext: *sec
+          readinessProbe:
+            httpGet: { path: /healthz, port: 8080 }
+          volumeMounts:
+            - { name: www, mountPath: /www, readOnly: true }
+            - { name: conf, mountPath: /etc/nginx/nginx.conf, subPath: nginx.conf }
+            - { name: tmp, mountPath: /tmp }
+        - name: refresh
+          image: curlimages/curl:8.16.0
+          command: ["/bin/sh", "-c", "while true; do sleep 3600; /bin/sh /conf/fetch.sh || echo refresh failed; done"]
+          securityContext: *sec
+          volumeMounts: *fetchmounts
+      volumes:
+        - { name: www, emptyDir: {} }
+        - { name: tmp, emptyDir: {} }
+        - { name: conf, configMap: { name: oidc-mirror, defaultMode: 0555 } }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: oidc-mirror
+  namespace: identity
+spec:
+  selector:
+    app: oidc-mirror
+  ports:
+    - port: 8080
+      targetPort: 8080

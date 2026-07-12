@@ -1,0 +1,58 @@
+# IRSA-at-home, the webhook half (Kyverno instead of EKS's
+# pod-identity-webhook): any pod whose ServiceAccount carries
+# eks.amazonaws.com/role-arn gets the projected sts.amazonaws.com token and
+# the SDK env vars injected at admission. AWS SDKs then do
+# AssumeRoleWithWebIdentity against the published cluster issuer — zero
+# static keys.
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: aws-pod-identity
+spec:
+  rules:
+    - name: inject-web-identity
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              operations: [CREATE]
+      context:
+        - name: sa
+          apiCall:
+            urlPath: "/api/v1/namespaces/{{request.namespace}}/serviceaccounts/{{request.object.spec.serviceAccountName || 'default'}}"
+        - name: roleArn
+          variable:
+            jmesPath: sa.metadata.annotations."eks.amazonaws.com/role-arn" || ''
+      preconditions:
+        all:
+          - key: "{{ roleArn }}"
+            operator: NotEquals
+            value: ""
+      mutate:
+        patchStrategicMerge:
+          spec:
+            volumes:
+              - name: aws-iam-token
+                projected:
+                  sources:
+                    - serviceAccountToken:
+                        audience: sts.amazonaws.com
+                        expirationSeconds: 86400
+                        path: token
+            containers:
+              - (name): "*"
+                env:
+                  - name: AWS_ROLE_ARN
+                    value: "{{ roleArn }}"
+                  - name: AWS_WEB_IDENTITY_TOKEN_FILE
+                    value: /var/run/secrets/eks.amazonaws.com/serviceaccount/token
+                  - name: AWS_REGION
+                    value: us-east-1
+                  - name: AWS_DEFAULT_REGION
+                    value: us-east-1
+                  - name: AWS_STS_REGIONAL_ENDPOINTS
+                    value: regional
+                volumeMounts:
+                  - name: aws-iam-token
+                    mountPath: /var/run/secrets/eks.amazonaws.com/serviceaccount
+                    readOnly: true
