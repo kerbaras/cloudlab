@@ -19,6 +19,15 @@ spec:
         namespace: flux-system
   values:
     alloy:
+      extraPorts:
+        - name: otlp-grpc
+          port: 4317
+          targetPort: 4317
+          protocol: TCP
+        - name: otlp-http
+          port: 4318
+          targetPort: 4318
+          protocol: TCP
       configMap:
         content: |
           discovery.kubernetes "pods" {
@@ -58,5 +67,31 @@ spec:
           loki.write "victorialogs" {
             endpoint {
               url = "http://vlogs-server.monitoring.svc.cluster.local:9428/insert/loki/api/v1/push"
+            }
+          }
+
+          // Traces: the cluster's OTLP intake (grpc :4317 / http :4318),
+          // batched into VictoriaTraces' OTLP endpoint.
+          otelcol.receiver.otlp "default" {
+            grpc {
+              endpoint = "0.0.0.0:4317"
+            }
+            http {
+              endpoint = "0.0.0.0:4318"
+            }
+            output {
+              traces = [otelcol.processor.batch.default.input]
+            }
+          }
+
+          otelcol.processor.batch "default" {
+            output {
+              traces = [otelcol.exporter.otlphttp.victoriatraces.input]
+            }
+          }
+
+          otelcol.exporter.otlphttp "victoriatraces" {
+            client {
+              endpoint = "http://vtsingle-vm-victoria-metrics-k8s-stack.monitoring.svc.cluster.local:10428/insert/opentelemetry"
             }
           }

@@ -7,5 +7,6 @@ resources:
   - victoria-logs.yaml
   - loki-vl-proxy.yaml
   - alloy.yaml
+  - referencegrant-envoy-otlp.yaml
   - httproute.yaml
   - policies

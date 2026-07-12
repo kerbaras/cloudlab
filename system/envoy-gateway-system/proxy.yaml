@@ -5,6 +5,18 @@ metadata:
   namespace: envoy-gateway-system
 spec:
   ipFamily: DualStack # bind :: not 0.0.0.0 — without this the v6 VIP dies at the socket
+  # Edge request traces → Alloy's OTLP intake → VictoriaTraces. 100% sampling
+  # is fine at lab traffic volumes. Cross-ns backendRef is granted by the
+  # ReferenceGrant in system/monitoring.
+  telemetry:
+    tracing:
+      samplingRate: 100
+      provider:
+        type: OpenTelemetry
+        backendRefs:
+          - name: alloy
+            namespace: monitoring
+            port: 4317
   provider:
     type: Kubernetes
     kubernetes:

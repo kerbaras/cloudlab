@@ -448,7 +448,7 @@ fate with one kernel, one PSU, one NVMe pair.
 | 15 | SOPS master key in AWS KMS | Local age key | The lost-workstation rebuild proved a local key is a single point of loss; KMS survives any one machine | OpenBao assumes secret custody (Phase 4) |
 | 16 | OpenEBS LocalPV-LVM on the PV pool | Longhorn, TopoLVM | Implements #8: thin LVs + CSI snapshots at a fraction of Longhorn's footprint; replication on one node stays theater | Box #2 reopens replicated storage |
 | 17 | IRSA-at-home: cluster SA issuer as public OIDC provider | Static AWS keys; IdP-in-the-middle | Published discovery at oidc.cloudlab.kerbaras.com + AWS IAM OIDC provider + Kyverno pod-identity injection = zero static AWS credentials (cert-manager, external-dns, Flux SOPS all AssumeRoleWithWebIdentity). GitHub accepts no inbound federation — a GitHub App is the fallback if the repo goes private | SPIFFE/SPIRE if identities outgrow SA tokens |
-| 18 | VictoriaMetrics + VictoriaLogs + Alloy | kube-prometheus-stack + Loki | ~3× lighter on a RAM-bound box; one Alloy ships pod logs and k8s events; Grafana fronts both | Ecosystem needs force Prometheus compat beyond vmagent's |
+| 18 | VictoriaMetrics + VictoriaLogs + VictoriaTraces + Alloy | kube-prometheus-stack + Loki + Tempo | ~3× lighter on a RAM-bound box; one Alloy ships pod logs, k8s events and OTLP traces; VT is Jaeger-compatible so Grafana needs no extra plugin; loki-vl-proxy bridges Logs Drilldown | Ecosystem needs force Prometheus compat beyond vmagent's |
 
 ---
 

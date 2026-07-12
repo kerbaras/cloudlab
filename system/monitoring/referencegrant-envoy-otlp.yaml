@@ -1,0 +1,16 @@
+# Lets the edge EnvoyProxy (envoy-gateway-system) reference Alloy's OTLP
+# Service across namespaces for trace export.
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: envoyproxy-to-alloy-otlp
+  namespace: monitoring
+spec:
+  from:
+    - group: gateway.envoyproxy.io
+      kind: EnvoyProxy
+      namespace: envoy-gateway-system
+  to:
+    - group: ""
+      kind: Service
+      name: alloy

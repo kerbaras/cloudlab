@@ -44,6 +44,18 @@ spec:
       enabled: false
     kubeEtcd:
       enabled: false
+    # VictoriaTraces: Jaeger-compatible trace store; the chart auto-wires the
+    # Grafana Jaeger datasource when enabled. Fed by Alloy's OTLP intake
+    # (alloy.yaml) — apps point OTEL_EXPORTER_OTLP_ENDPOINT at alloy:4318.
+    vtsingle:
+      enabled: true
+      spec:
+        retentionPeriod: 14d
+        storage:
+          accessModes: [ReadWriteOnce]
+          resources:
+            requests:
+              storage: 10Gi
     # vm-k8s-stack schema (NOT kube-prometheus-stack's additionalDataSources):
     # extra datasources hang off defaultDatasources.extra.
     defaultDatasources:
