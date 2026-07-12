@@ -11,6 +11,7 @@ spec:
   interval: 30m
   timeout: 15m
   targetNamespace: zitadel
+  releaseName: zitadel # avoid the <ns>-<name> prefix: services must be zitadel / zitadel-login
   install:
     remediation:
       retries: 3 # first install races the CNPG cluster coming up

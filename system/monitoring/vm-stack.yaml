@@ -10,6 +10,7 @@ spec:
   interval: 30m
   timeout: 15m
   targetNamespace: monitoring
+  releaseName: vm # helm-controller would otherwise prefix with the namespace, renaming every service
   install:
     remediation:
       retries: 3

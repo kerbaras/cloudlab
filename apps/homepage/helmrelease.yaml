@@ -9,6 +9,7 @@ metadata:
 spec:
   interval: 30m
   targetNamespace: homepage
+  releaseName: homepage # avoid the <ns>-<name> prefix: service must be "homepage"
   chart:
     spec:
       chart: homepage
