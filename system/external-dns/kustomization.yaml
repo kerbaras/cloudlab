@@ -3,4 +3,4 @@ kind: Kustomization
 resources:
   - source.yaml
   - helmrelease.yaml
-  - issuer.yaml
+  - policies

@@ -19,3 +19,6 @@ spec:
   values:
     crds:
       enabled: true
+    serviceAccount:
+      annotations:
+        eks.amazonaws.com/role-arn: arn:aws:iam::203447569320:role/cloudlab-cert-manager

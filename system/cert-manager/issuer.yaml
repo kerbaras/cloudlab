@@ -11,15 +11,8 @@ spec:
       name: letsencrypt-dns01-account
     solvers:
       - dns01:
-          # v1 ran external-dns against Route53, so the zone is assumed to be
-          # there (CHECKME: confirm). Credentials are applied manually in
-          # README Stage 4 from route53-credentials.sops.yaml.example (never
-          # plaintext in Git); IRSA-style federation replaces them in Phase 4.
+          # Keyless: ambient AssumeRoleWithWebIdentity via the Kyverno
+          # pod-identity injection (role cloudlab-cert-manager; SA annotation
+          # in helmrelease.yaml). No static credentials anywhere.
           route53:
             region: us-east-1
-            accessKeyIDSecretRef:
-              name: route53-credentials
-              key: access-key-id
-            secretAccessKeySecretRef:
-              name: route53-credentials
-              key: secret-access-key

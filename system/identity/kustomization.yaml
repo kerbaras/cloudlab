@@ -5,4 +5,5 @@ resources:
   - oidc-mirror.yaml
   - httproute.yaml
   - aws-pod-identity.yaml
+  - decrypt-canary.sops.yaml
   - policies

@@ -10,3 +10,40 @@ resources:
   - openebs-ks.yaml
   - kyverno-ks.yaml
   - identity-ks.yaml
+  - external-dns-ks.yaml
+patches:
+  # IRSA-at-home for SOPS-KMS decryption: kustomize-controller assumes
+  # cloudlab-flux-sops via web identity (no static key). This is an explicit
+  # patch rather than the Kyverno injection so a cold rebuild works before
+  # Kyverno exists. Break-glass for cold rebuilds: the OIDC URL is only
+  # servable after the edge is up — see README Stage 4.
+  - patch: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: kustomize-controller
+        namespace: flux-system
+      spec:
+        template:
+          spec:
+            containers:
+              - name: manager
+                env:
+                  - name: AWS_ROLE_ARN
+                    value: arn:aws:iam::203447569320:role/cloudlab-flux-sops
+                  - name: AWS_WEB_IDENTITY_TOKEN_FILE
+                    value: /var/run/secrets/eks.amazonaws.com/serviceaccount/token
+                  - name: AWS_REGION
+                    value: us-east-1
+                volumeMounts:
+                  - name: aws-iam-token
+                    mountPath: /var/run/secrets/eks.amazonaws.com/serviceaccount
+                    readOnly: true
+            volumes:
+              - name: aws-iam-token
+                projected:
+                  sources:
+                    - serviceAccountToken:
+                        audience: sts.amazonaws.com
+                        expirationSeconds: 86400
+                        path: token

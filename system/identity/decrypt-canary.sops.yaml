@@ -1,0 +1,20 @@
+# Permanent canary: if this fails to decrypt, the keyless SOPS path
+# (kustomize-controller -> web identity -> KMS) is broken. Value is noise.
+apiVersion: v1
+kind: Secret
+metadata:
+    name: decrypt-canary
+    namespace: identity
+type: Opaque
+stringData:
+    canary: ENC[AES256_GCM,data:JT92HjR2B0TjlhWcFSW/RJqC,iv:TJJPKPZ32u8Xkufv7H4uaK7+uHplBUvgbRM9L81rWdk=,tag:g+6OpdFYPWqO6/7q5krxVA==,type:str]
+sops:
+    kms:
+        - arn: arn:aws:kms:us-east-1:203447569320:key/99cadca6-ba46-4ef0-9df2-9f2678b7962e
+          created_at: "2026-07-12T03:36:44Z"
+          enc: AQICAHghjr0dewq1sbS0xUAI2yzWINRSDNS1+gWClJ5Dzg9INgG83zuOCirHraOlYEgZKOJDAAAAfjB8BgkqhkiG9w0BBwagbzBtAgEAMGgGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMfrE1oysdHJnFK0fwAgEQgDtqC110L2wZk4yAkVqKSJv+jvQCXQSVH29eldsTKp/U1ZEKkLVR3Rwxtw0kk1NiQ4UnUjskngV+9QnvCQ==
+          aws_profile: ""
+    lastmodified: "2026-07-12T03:36:45Z"
+    mac: ENC[AES256_GCM,data:t3midfNUEy+G5uT1HLk7RaDbX53J/wxc4GE3Mgzp5umq0W77u66us7KcEluedv6nPkGT1JDQZ0vauXIFh2hIo0HE3p6TL4tSoXGhN9yMEUXilEmAOX6L3FBWOcS6e2n2XXI2CvCv4WFVwHEelF4QzWppaYDOHdg7fDI5rX0CZqc=,iv:h/4napSvxQx/4qivRFa8sHIQXV6cw2kzkb8rzTvmvwE=,tag:B4J/OX0zWztZMs1Y/AVBDg==,type:str]
+    encrypted_regex: ^(data|stringData)$
+    version: 3.11.0

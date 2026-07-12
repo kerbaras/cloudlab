@@ -14,9 +14,7 @@ spec:
   prune: true
   wait: true
   decryption:
-    provider: sops
-    secretRef:
-      name: sops-kms
+    provider: sops # KMS via kustomize-controller's web identity (no secretRef)
   sourceRef:
     kind: GitRepository
     name: flux-system

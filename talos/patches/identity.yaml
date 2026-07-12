@@ -1,8 +1,9 @@
 # IRSA-at-home (ARCHITECTURE.md L6 flow 3): the cluster's SA issuer becomes a
 # public OIDC provider at oidc.cloudlab.kerbaras.com (served by
-# system/identity). Talos prepends extraArgs issuers before the default, so
-# the previous issuer (https://65.21.143.251:6443) keeps validating existing
-# tokens while the new one signs.
+# system/identity).
+# CAUTION: this extraArg REPLACES the default issuer — existing SA tokens go
+# Unauthorized (Cilium first, then everything). Changing it costs a full
+# pod-restart wave: cilium ds first, then every deployment.
 cluster:
   apiServer:
     extraArgs:

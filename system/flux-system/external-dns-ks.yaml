@@ -1,17 +1,18 @@
-# Envoy Gateway: controller HelmRelease + GatewayClass/EnvoyProxy + the
-# namespace's Cilium policies, colocated. Same first-install retry story as
-# cert-manager (GatewayClass needs the chart's Gateway API CRDs).
+# dependsOn identity: needs the Kyverno pod-identity policy at pod-create
+# time (and, transitively, the Gateway API CRDs its sources watch).
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: envoy-gateway-system
+  name: external-dns
   namespace: flux-system
 spec:
   interval: 10m
   retryInterval: 2m
-  path: ./system/envoy-gateway-system
+  path: ./system/external-dns
   prune: true
   wait: true
+  dependsOn:
+    - name: identity
   decryption:
     provider: sops # KMS via kustomize-controller's web identity (no secretRef)
   sourceRef:
