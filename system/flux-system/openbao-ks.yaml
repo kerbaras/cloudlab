@@ -6,7 +6,7 @@ metadata:
 spec:
   interval: 10m
   retryInterval: 2m
-  path: ./system/openbao
+  path: ./apps/openbao
   prune: true
   wait: true
   dependsOn:

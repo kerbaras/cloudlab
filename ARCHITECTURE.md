@@ -359,10 +359,11 @@ cloudlab/
 
 `system/` has since grown: `openebs` (storage, #16), `kyverno` (policy
 engine), `identity` (OIDC publication + pod-identity injection, #17),
-`external-dns`, `monitoring` (#18), `cloudnative-pg`, `tailscale`
-(operator), and `openbao` (L6 secret custody; keyless awskms auto-unseal
-via #17's pod identity — Phase 4 begins). Gateway-level OIDC (L6 flow 2)
-fronts the auth-less observability UIs via Envoy SecurityPolicy.
+`external-dns`, `monitoring` (#18), `cloudnative-pg`, and `tailscale`
+(operator). `apps/` gained `openbao` (L6 secret custody; keyless awskms
+auto-unseal via #17's pod identity — Phase 4 begins), sitting beside its
+IdP sibling `zitadel`. Gateway-level OIDC (L6 flow 2) fronts the auth-less
+observability UIs via Envoy SecurityPolicy.
 
 Note: `clusters/` here means *workload clusters as products* (L3), a
 deliberate deviation from the Flux-community convention where `clusters/`
