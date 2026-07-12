@@ -9,3 +9,14 @@ cluster:
     extraArgs:
       service-account-issuer: https://oidc.cloudlab.kerbaras.com
       service-account-jwks-uri: https://oidc.cloudlab.kerbaras.com/openid/v1/jwks
+      # Humans → cluster via Zitadel (L6 flow 1): the "kubernetes" native app
+      # (device-code + authcode PKCE). A Zitadel Action flattens project roles
+      # into the groups claim; RBAC binds oidc:admin → cluster-admin
+      # (system/identity/rbac.yaml). Changing these flags only restarts the
+      # apiserver — no SA-token wave (unlike the issuer above).
+      oidc-issuer-url: https://auth.cloudlab.kerbaras.com
+      oidc-client-id: "381423189042987010"
+      oidc-username-claim: email
+      oidc-username-prefix: "oidc:"
+      oidc-groups-claim: groups
+      oidc-groups-prefix: "oidc:"
