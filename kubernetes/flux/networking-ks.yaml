@@ -14,7 +14,7 @@ spec:
   decryption:
     provider: sops
     secretRef:
-      name: sops-age # created once by hand: README Stage 4
+      name: sops-kms # scoped cloudlab-flux-sops AWS creds, created once by hand: README Stage 4
   sourceRef:
     kind: GitRepository
     name: flux-system

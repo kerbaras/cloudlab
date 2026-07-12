@@ -1,3 +1,11 @@
+# SOPS master key: AWS KMS (alias/cloudlab-sops, us-east-1). Encrypt with
+# operator credentials (AWS_PROFILE=personal); Flux decrypts in-cluster with
+# the scoped cloudlab-flux-sops IAM user (kms:Decrypt on this key only).
 creation_rules:
+  # Kubernetes Secret manifests: keep apiVersion/kind/metadata plaintext so
+  # kustomize build + Flux can parse them before decryption.
+  - path_regex: kubernetes/.*\.sops\.ya?ml$
+    encrypted_regex: ^(data|stringData)$
+    kms: arn:aws:kms:us-east-1:203447569320:key/99cadca6-ba46-4ef0-9df2-9f2678b7962e
   - path_regex: .*\.sops\.ya?ml$
-    age: age14zk8v7xuur9z93f6yzscdyn35t47547we0yyx8datxrm2hjr2y8qk89nkr
+    kms: arn:aws:kms:us-east-1:203447569320:key/99cadca6-ba46-4ef0-9df2-9f2678b7962e

@@ -44,10 +44,15 @@ Already pinned from the live v1 box + tailnet: install disk (by serial), IPv4
 ## Stage 0 — Prerequisites (workstation)
 
 Tools: `talosctl`, `talhelper`, `kubectl`, `helm`, `cilium`, `hubble`,
-`sops`, `age`.
+`sops`, `aws`.
 
-1. **SOPS/age**: generate a key (`age-keygen`), put the public recipient in
-   `.sops.yaml`, keep the private key off-box (password manager).
+1. **SOPS/KMS**: the master key is AWS KMS `alias/cloudlab-sops` (us-east-1,
+   ARN pinned in `.sops.yaml` — decision #15). Operators encrypt/decrypt with
+   their own AWS credentials (`eval "$(aws configure export-credentials
+   --profile personal --format env)"` — sops can't read `aws login` root
+   sessions directly); in-cluster decryption uses the `cloudlab-flux-sops`
+   IAM user, scoped to `kms:Decrypt` on that one key. No local key material
+   to lose.
 2. **Tailscale**: in the admin console apply
    [`tailscale/policy.hujson`](./tailscale/policy.hujson), then create an
    auth key **tagged `tag:cloudlab-host`** (reusable off, ephemeral off).
@@ -148,11 +153,14 @@ until Stage 5 flips the switch.
    ```bash
    kubectl apply -k kubernetes/flux/flux-system
    ```
-2. Give Flux the SOPS key (the one manual secret; everything downstream
-   decrypts from Git):
+2. Give Flux AWS credentials for SOPS-KMS decryption (the one manual secret;
+   everything downstream decrypts from Git). Fresh access key for the scoped
+   `cloudlab-flux-sops` user, in the `sops.aws-kms` format kustomize-controller
+   expects:
    ```bash
-   kubectl -n flux-system create secret generic sops-age \
-     --from-file=age.agekey="$HOME/Library/Application Support/sops/age/keys.txt"
+   aws iam create-access-key --user-name cloudlab-flux-sops   # then:
+   kubectl -n flux-system create secret generic sops-kms \
+     --from-literal=sops.aws-kms="$(printf 'aws_access_key_id: %s\naws_secret_access_key: %s' "$KEY_ID" "$SECRET")"
    ```
 3. Reconciliation lands in order: `infra` (Envoy Gateway + cert-manager) →
    `networking` (pools, Gateway, issuer, wildcard cert, Route53 secret) →

@@ -328,8 +328,9 @@ Pod egress:
 A Flux Kustomization tree from this repo; `dependsOn` orders CRD providers
 before consumers (infra → networking → policies). Cilium is the one
 bootstrap-installed component (no CNI, no pods, no GitOps) and may be adopted
-into Flux later. Secrets are SOPS-encrypted in-repo and decrypted natively by
-Flux (age key held in-cluster) until OpenBao assumes custody.
+into Flux later. Secrets are SOPS-encrypted in-repo against AWS KMS
+(`alias/cloudlab-sops`; decision #15) and decrypted natively by Flux via a
+KMS-scoped IAM credential held in-cluster, until OpenBao assumes custody.
 
 ```
 cloudlab/
@@ -428,6 +429,7 @@ fate with one kernel, one PSU, one NVMe pair.
 | 12 | SaaS Tailscale | Headscale | Zero control-plane ops now; sovereignty is a later itch | The itch |
 | 13 | Flux | ArgoCD | Native SOPS decryption, pull-based, ~700 MB lighter; v1's endgame was already a Flux migration; cluster stamping moves to kro+Flux templates | A console need arises (Headlamp/Capacitor) |
 | 14 | Internet-open mTLS mgmt endpoints | Talos-firewall IP pinning; tailnet-only mgmt | Operator egress IP is dynamic → pinning is a lockout timer; apid/apiserver are mutually-authenticated TLS; allowlisting delegated to the browser-editable Robot firewall | Static operator egress, or Tailscale API-server proxy assumes the role |
+| 15 | SOPS master key in AWS KMS | Local age key | The lost-workstation rebuild proved a local key is a single point of loss; KMS survives any one machine, and Flux decrypts via an IAM user scoped to kms:Decrypt on one key | OpenBao assumes secret custody (Phase 4) |
 
 ---
 
