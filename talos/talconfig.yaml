@@ -22,6 +22,7 @@ additionalMachineCertSans: *sans
 patches:
   - "@./patches/cluster.yaml"
   - "@./patches/sysctls.yaml"
+  - "@./patches/storage.yaml"
   - "@./patches/firewall.yaml"
   - "@./patches/tailscale.yaml" # gitignored copy of tailscale.yaml.example (holds TS_AUTHKEY)
 nodes:

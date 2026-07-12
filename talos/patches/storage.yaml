@@ -1,0 +1,7 @@
+# LVM thin provisioning for the PV pool (ARCHITECTURE.md §9): OpenEBS
+# LocalPV-LVM carves thin volumes out of VG "pvpool" on the second NVMe
+# (serial S4GENX0R517494). dm_mod/dm_snapshot are built in; thin-pool is not.
+machine:
+  kernel:
+    modules:
+      - name: dm_thin_pool

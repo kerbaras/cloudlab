@@ -1,0 +1,15 @@
+# The default StorageClass: thin LVs from VG pvpool (thin → CSI snapshots).
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: lvm-thin
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "true"
+provisioner: local.csi.openebs.io
+volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: true
+parameters:
+  storage: "lvm"
+  volgroup: "pvpool"
+  thinProvision: "yes"
+  fsType: "ext4"

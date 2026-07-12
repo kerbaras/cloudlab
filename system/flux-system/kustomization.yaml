@@ -7,3 +7,5 @@ resources:
   - cert-manager-ks.yaml
   - envoy-gateway-system-ks.yaml
   - edge-ks.yaml
+  - openebs-ks.yaml
+  - kyverno-ks.yaml
