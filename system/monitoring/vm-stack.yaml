@@ -126,8 +126,6 @@ spec:
             - name: victoriametrics-logs-datasource
               orgId: 1
       grafana.ini:
-        log:
-          level: debug # TEMP: chasing oauth user-sync failure
         server:
           root_url: https://grafana.cloudlab.kerbaras.com
         # Zitadel SSO (decision #17's human half): PKCE public client — no
