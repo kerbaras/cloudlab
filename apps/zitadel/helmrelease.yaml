@@ -11,6 +11,12 @@ spec:
   interval: 30m
   timeout: 15m
   targetNamespace: zitadel
+  install:
+    remediation:
+      retries: 3 # first install races the CNPG cluster coming up
+  upgrade:
+    remediation:
+      retries: 3
   chart:
     spec:
       chart: zitadel

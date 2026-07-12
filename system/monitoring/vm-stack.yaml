@@ -10,6 +10,12 @@ spec:
   interval: 30m
   timeout: 15m
   targetNamespace: monitoring
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
   chart:
     spec:
       chart: victoria-metrics-k8s-stack
