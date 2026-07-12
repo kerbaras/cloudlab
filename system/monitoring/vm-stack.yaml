@@ -56,20 +56,23 @@ spec:
           resources:
             requests:
               storage: 10Gi
-    # vm-k8s-stack schema (NOT kube-prometheus-stack's additionalDataSources):
-    # extra datasources hang off defaultDatasources.extra.
+    # One datasource per signal, standard types only (prometheus / loki /
+    # jaeger). The chart's VM(DS)+VL plugin-typed duplicates are disabled;
+    # VictoriaTraces stays on the chart default (already jaeger-typed).
     defaultDatasources:
-      # the chart's built-in VL datasource only gets a URL when its own
-      # vlsingle is enabled; ours is a separate release — disable the stub
+      victoriametrics:
+        datasources:
+          - name: VictoriaMetrics
+            type: prometheus
+            access: proxy
+            uid: VictoriaMetrics
+            isDefault: true
       victorialogs:
         datasources: []
+      alertmanager:
+        datasources: []
       extra:
-        - name: VictoriaLogs
-          type: victoriametrics-logs-datasource
-          access: proxy
-          url: http://vlogs-server:9428
-        # Loki-type datasource via loki-vl-proxy — exists so Logs Drilldown
-        # (Loki-only by design) works; same VictoriaLogs data behind it.
+        # Loki-type via loki-vl-proxy: Explore + Logs Drilldown, VL behind it
         - name: Loki (VictoriaLogs)
           type: loki
           access: proxy
@@ -82,8 +85,20 @@ spec:
       persistence:
         enabled: true
         size: 2Gi
-      plugins:
-        - victoriametrics-logs-datasource
+      # provisioning removal alone doesn't purge rows from Grafana's DB —
+      # this cleanup file does (idempotent at every startup)
+      datasources:
+        cleanup.yaml:
+          apiVersion: 1
+          deleteDatasources:
+            - name: VictoriaMetrics (DS)
+              orgId: 1
+            - name: VictoriaLogs
+              orgId: 1
+            - name: victoriametrics-logs-datasource
+              orgId: 1
+            - name: Alertmanager
+              orgId: 1
       grafana.ini:
         log:
           level: debug # TEMP: chasing oauth user-sync failure
