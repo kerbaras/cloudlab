@@ -1,0 +1,54 @@
+# Metrics half of the observability plane (ARCHITECTURE.md §3 "CloudWatch"):
+# VM operator + vmsingle + vmagent + vmalert/alertmanager + Grafana +
+# kube-state-metrics + node-exporter + community dashboards.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: vm
+  namespace: flux-system
+spec:
+  interval: 30m
+  timeout: 15m
+  targetNamespace: monitoring
+  chart:
+    spec:
+      chart: victoria-metrics-k8s-stack
+      version: 0.86.0
+      sourceRef:
+        kind: HelmRepository
+        name: victoriametrics
+        namespace: flux-system
+  values:
+    vmsingle:
+      spec:
+        retentionPeriod: "30d"
+        storage:
+          accessModes: [ReadWriteOnce]
+          resources:
+            requests:
+              storage: 20Gi
+    # Talos runs no kube-proxy (Cilium KPR) and its control-plane components
+    # bind localhost — those scrape targets would only produce dead alerts.
+    kubeProxy:
+      enabled: false
+    kubeControllerManager:
+      enabled: false
+    kubeScheduler:
+      enabled: false
+    kubeEtcd:
+      enabled: false
+    grafana:
+      enabled: true
+      persistence:
+        enabled: true
+        size: 2Gi
+      plugins:
+        - victoriametrics-logs-datasource
+      additionalDataSources:
+        - name: VictoriaLogs
+          type: victoriametrics-logs-datasource
+          access: proxy
+          url: http://vlogs-server:9428
+      grafana.ini:
+        server:
+          root_url: https://grafana.cloudlab.kerbaras.com

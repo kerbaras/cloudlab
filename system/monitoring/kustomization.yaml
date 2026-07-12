@@ -1,0 +1,10 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - sources.yaml
+  - vm-stack.yaml
+  - victoria-logs.yaml
+  - alloy.yaml
+  - httproute.yaml
+  - policies
