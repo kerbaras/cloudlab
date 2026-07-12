@@ -1,0 +1,10 @@
+# Proxy pods the operator creates need NET_ADMIN (tun + fw setup) — beyond
+# baseline PSA, so the namespace opts in.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tailscale
+  labels:
+    pod-security.kubernetes.io/enforce: privileged
+    pod-security.kubernetes.io/audit: privileged
+    pod-security.kubernetes.io/warn: privileged

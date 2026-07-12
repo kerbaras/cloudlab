@@ -1,0 +1,32 @@
+# Tailscale k8s operator (ARCHITECTURE.md L5, the Phase-2 ergonomics upgrade):
+# per-Service tailnet devices, tag-scoped (tag:k8s). The host subnet router
+# stays — defense in depth. Expose a Service to the tailnet with:
+#   annotations: { tailscale.com/expose: "true" }   (or loadBalancerClass: tailscale)
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: tailscale-operator
+  namespace: flux-system
+spec:
+  interval: 30m
+  targetNamespace: tailscale
+  releaseName: tailscale-operator
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  chart:
+    spec:
+      chart: tailscale-operator
+      version: 1.98.4
+      sourceRef:
+        kind: HelmRepository
+        name: tailscale
+        namespace: flux-system
+  values:
+    # oauth left unset on purpose: the pre-created sops secret operator-oauth
+    # (oauth.sops.yaml) carries the credentials
+    operatorConfig:
+      hostname: cloudlab-k8s-operator

@@ -1,0 +1,21 @@
+# OAuth client for the Tailscale k8s operator (tag:k8s-operator; scopes:
+# Devices Core + Auth Keys, write). The chart looks for this exact secret name.
+apiVersion: v1
+kind: Secret
+metadata:
+    name: operator-oauth
+    namespace: tailscale
+type: Opaque
+stringData:
+    client_id: ENC[AES256_GCM,data:0u47x/VPLtvqHXccqzUFqXE=,iv:n/iQNuO/dYstA54cwlEsx2Ss9oM8xBlrvrIamxgsLqQ=,tag:ucdIafs+NqLuSi0VHUfw+g==,type:str]
+    client_secret: ENC[AES256_GCM,data:gZQUTV0UXnYbfBUerZtx0Lc/zG78AmsHtmzk1pCaCXDwi6JnMHOyI6rBpErTZyrw3nqC5TDfic//xlDgDx3E,iv:sW/vnwglY1ZDjWuRrLv1ituY5ppxbC4oqa6Rs7Haqa8=,tag:m388zYbC/NyMh4k21/eMLw==,type:str]
+sops:
+    kms:
+        - arn: arn:aws:kms:us-east-1:203447569320:key/99cadca6-ba46-4ef0-9df2-9f2678b7962e
+          created_at: "2026-07-12T07:32:29Z"
+          enc: AQICAHghjr0dewq1sbS0xUAI2yzWINRSDNS1+gWClJ5Dzg9INgFUiH2h+z/m4I0vtE0wjvi+AAAAfjB8BgkqhkiG9w0BBwagbzBtAgEAMGgGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQM3+oZIiOgKKKhKwyMAgEQgDvHILA8rkthF4y8JA6Whu1h3IEFrz90LWSBiPEP+IPrltGJnfGU8CfOvALFq9XX68WIKdIlDkWXDJNc4A==
+          aws_profile: ""
+    lastmodified: "2026-07-12T07:32:30Z"
+    mac: ENC[AES256_GCM,data:Gh5dIOZarSFDfpGdxJBO0pbCm52p8DzfNa7mh/zaHvk9iQ4Ed4Hbr8p5sgj3h2PBWMmVRHOw0g3FHxZ3ekpOisq+bwwmb5mREv0cisj3rybMVTQ7Ex3aby/H/Ld7lG0rxTMAg2KAE1QootRoaje9HNEbHkxHG+Be4opsoIc/TK8=,iv:8Zc40yStbR3KPrnPEiZZvLfoGCKYU3aIC39Mh89Uiq4=,tag:PIHLECpd4Mr5lOdcv+rtjg==,type:str]
+    encrypted_regex: ^(data|stringData)$
+    version: 3.11.0

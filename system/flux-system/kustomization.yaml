@@ -17,6 +17,7 @@ resources:
   - cloudnative-pg-ks.yaml
   - zitadel-ks.yaml
   - homepage-ks.yaml
+  - tailscale-ks.yaml
 patches:
   # the flux-system namespace hosts the webhook HTTPRoute → key 1 of the
   # two-key launch
