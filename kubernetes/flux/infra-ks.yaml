@@ -8,7 +8,7 @@ metadata:
 spec:
   interval: 10m
   path: ./kubernetes/flux/infra
-  prune: true
+  prune: false # migration: disarm GC before this ks is replaced by system/ per-component ks
   wait: true # HelmReleases must be Ready before dependents start
   sourceRef:
     kind: GitRepository

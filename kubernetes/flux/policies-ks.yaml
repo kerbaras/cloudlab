@@ -7,7 +7,7 @@ metadata:
 spec:
   interval: 10m
   path: ./kubernetes/policies
-  prune: true
+  prune: false # migration: disarm GC before this ks is replaced by system/ per-component ks
   dependsOn:
     - name: networking
   sourceRef:
