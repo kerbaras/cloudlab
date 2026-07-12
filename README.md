@@ -42,7 +42,7 @@ app follows the same pattern: `apps/<name>/` plus a `<name>-ks.yaml` in
 |---|---|
 | `talos/patches/tailscale.yaml` | copied from `.example`; tagged Tailscale auth key |
 | `system/cert-manager/issuer.yaml` | ACME contact email |
-| `system/cert-manager/route53-credentials.sops.yaml.example` | scoped IAM key for DNS-01 |
+| AWS role ARNs | pinned in manifests (`cloudlab-cert-manager`, `cloudlab-external-dns`, `cloudlab-flux-sops`) — no keys, see decision #17 |
 | DNS zone | `*.cloudlab.kerbaras.com` A → `65.21.143.224`, AAAA → edge address from `fd02::/64` (after Stage 4) |
 
 Already pinned from the live v1 box + tailnet: install disk (by serial), IPv4
@@ -59,9 +59,10 @@ Tools: `talosctl`, `talhelper`, `kubectl`, `helm`, `cilium`, `hubble`,
    ARN pinned in `.sops.yaml` — decision #15). Operators encrypt/decrypt with
    their own AWS credentials (`eval "$(aws configure export-credentials
    --profile personal --format env)"` — sops can't read `aws login` root
-   sessions directly); in-cluster decryption uses the `cloudlab-flux-sops`
-   IAM user, scoped to `kms:Decrypt` on that one key. No local key material
-   to lose.
+   sessions directly); in-cluster decryption is keyless: kustomize-controller
+   assumes the `cloudlab-flux-sops` role via the published cluster OIDC
+   issuer (decision #17). The `decrypt-canary` secret in `system/identity`
+   proves the path on every reconcile.
 2. **Tailscale**: in the admin console apply
    [`tailscale/policy.hujson`](./tailscale/policy.hujson), then create an
    auth key **tagged `tag:cloudlab-host`** (reusable off, ephemeral off).
@@ -162,15 +163,22 @@ until Stage 5 flips the switch.
    ```bash
    kubectl apply -k system/flux-system
    ```
-2. Give Flux AWS credentials for SOPS-KMS decryption (the one manual secret;
-   everything downstream decrypts from Git). Fresh access key for the scoped
-   `cloudlab-flux-sops` user, in the `sops.aws-kms` format kustomize-controller
-   expects:
+2. **Cold-rebuild break-glass only**: steady-state SOPS decryption is
+   keyless (kustomize-controller → web identity → KMS), but on a from-scratch
+   rebuild the OIDC issuer isn't public until the edge is up — a circle.
+   Bridge it by handing kustomize-controller your operator credentials for
+   one convergence pass, then let GitOps remove them:
    ```bash
-   aws iam create-access-key --user-name cloudlab-flux-sops   # then:
-   kubectl -n flux-system create secret generic sops-kms \
-     --from-literal=sops.aws-kms="$(printf 'aws_access_key_id: %s\naws_secret_access_key: %s' "$KEY_ID" "$SECRET")"
+   eval "$(aws configure export-credentials --profile personal --format env)"
+   kubectl -n flux-system set env deploy/kustomize-controller \
+     AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" AWS_SESSION_TOKEN="$AWS_SESSION_TOKEN"
+   # once the edge + oidc mirror are Ready, flux reconcile kustomization flux-system
+   # re-applies the web-identity-only pod spec and the env vars vanish.
    ```
+   Storage is the other one-time bootstrap: `dm_thin_pool` loads via
+   `talos/patches/storage.yaml`, and the VG is created once from a
+   privileged pod — `pvcreate`/`vgcreate pvpool` on the by-id path of disk
+   `S4GENX0R517494` (see `system/openebs/helmrelease.yaml` header).
 3. Reconciliation follows the dependency DAG: `cilium` (LB pools),
    `cert-manager`, and `envoy-gateway-system` land in parallel, then `edge`
    (Gateway, wildcard cert, redirect). Watch with

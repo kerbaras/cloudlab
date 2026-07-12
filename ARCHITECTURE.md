@@ -350,10 +350,16 @@ cloudlab/
 │   ├── envoy-gateway-system/  HelmRelease · GatewayClass · EnvoyProxy · policies
 │   ├── edge/                Gateway · wildcard cert · redirect · policies
 │   └── policies/            reusable baseline components · examples
+├── apps/                    one dir per app + one ks in system/flux-system
+│   ├── zitadel/             IdP (L6) on a CNPG database
+│   └── homepage/            the hub — HTTPRoutes self-register via annotations
 └── (planned)
-    ├── apps/                one dir per app (dashboard, Zitadel, OpenBao, …)
     └── clusters/            CAPI manifests per workload cluster (fdN* trios)
 ```
+
+`system/` has since grown: `openebs` (storage, #16), `kyverno` (policy
+engine), `identity` (OIDC publication + pod-identity injection, #17),
+`external-dns`, `monitoring` (#18), `cloudnative-pg`.
 
 Note: `clusters/` here means *workload clusters as products* (L3), a
 deliberate deviation from the Flux-community convention where `clusters/`
@@ -439,7 +445,10 @@ fate with one kernel, one PSU, one NVMe pair.
 | 12 | SaaS Tailscale | Headscale | Zero control-plane ops now; sovereignty is a later itch | The itch |
 | 13 | Flux | ArgoCD | Native SOPS decryption, pull-based, ~700 MB lighter; v1's endgame was already a Flux migration; cluster stamping moves to kro+Flux templates | A console need arises (Headlamp/Capacitor) |
 | 14 | Internet-open mTLS mgmt endpoints | Talos-firewall IP pinning; tailnet-only mgmt | Operator egress IP is dynamic → pinning is a lockout timer; apid/apiserver are mutually-authenticated TLS; allowlisting delegated to the browser-editable Robot firewall | Static operator egress, or Tailscale API-server proxy assumes the role |
-| 15 | SOPS master key in AWS KMS | Local age key | The lost-workstation rebuild proved a local key is a single point of loss; KMS survives any one machine, and Flux decrypts via an IAM user scoped to kms:Decrypt on one key | OpenBao assumes secret custody (Phase 4) |
+| 15 | SOPS master key in AWS KMS | Local age key | The lost-workstation rebuild proved a local key is a single point of loss; KMS survives any one machine | OpenBao assumes secret custody (Phase 4) |
+| 16 | OpenEBS LocalPV-LVM on the PV pool | Longhorn, TopoLVM | Implements #8: thin LVs + CSI snapshots at a fraction of Longhorn's footprint; replication on one node stays theater | Box #2 reopens replicated storage |
+| 17 | IRSA-at-home: cluster SA issuer as public OIDC provider | Static AWS keys; IdP-in-the-middle | Published discovery at oidc.cloudlab.kerbaras.com + AWS IAM OIDC provider + Kyverno pod-identity injection = zero static AWS credentials (cert-manager, external-dns, Flux SOPS all AssumeRoleWithWebIdentity). GitHub accepts no inbound federation — a GitHub App is the fallback if the repo goes private | SPIFFE/SPIRE if identities outgrow SA tokens |
+| 18 | VictoriaMetrics + VictoriaLogs + Alloy | kube-prometheus-stack + Loki | ~3× lighter on a RAM-bound box; one Alloy ships pod logs and k8s events; Grafana fronts both | Ecosystem needs force Prometheus compat beyond vmagent's |
 
 ---
 
