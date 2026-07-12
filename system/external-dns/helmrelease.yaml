@@ -28,6 +28,10 @@ spec:
       - gateway-tlsroute
     domainFilters:
       - cloudlab.kerbaras.com
+    extraArgs:
+      # records live under cloudlab.* but the hosted zone is the parent
+      # kerbaras.com — without this flag zone discovery matches nothing
+      - --aws-zone-match-parent
     txtOwnerId: cloudlab-mgmt
     policy: sync
     serviceAccount:
