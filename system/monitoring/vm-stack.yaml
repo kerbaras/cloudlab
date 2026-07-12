@@ -56,6 +56,13 @@ spec:
           type: victoriametrics-logs-datasource
           access: proxy
           url: http://vlogs-server:9428
+        # Loki-type datasource via loki-vl-proxy — exists so Logs Drilldown
+        # (Loki-only by design) works; same VictoriaLogs data behind it.
+        - name: Loki (VictoriaLogs)
+          type: loki
+          access: proxy
+          uid: loki-vl
+          url: http://loki-vl-proxy:3100
     grafana:
       enabled: true
       deploymentStrategy:

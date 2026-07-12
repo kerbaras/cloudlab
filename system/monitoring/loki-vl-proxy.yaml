@@ -1,0 +1,31 @@
+# Loki-API façade over VictoriaLogs so Grafana's Logs Drilldown (hardcoded to
+# Loki datasources) works against our VL backend. Third-party bridge, chosen
+# deliberately: VL won't implement the Loki API and Drilldown won't accept
+# non-Loki datasources.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: loki-vl-proxy
+  namespace: flux-system
+spec:
+  interval: 30m
+  targetNamespace: monitoring
+  releaseName: loki-vl-proxy
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  chart:
+    spec:
+      chart: loki-vl-proxy
+      version: 1.62.0
+      sourceRef:
+        kind: HelmRepository
+        name: reliablyobserve
+        namespace: flux-system
+  values:
+    extraArgs:
+      backend: http://vlogs-server:9428
+      patterns-enabled: "true"

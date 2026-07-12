@@ -5,6 +5,7 @@ resources:
   - sources.yaml
   - vm-stack.yaml
   - victoria-logs.yaml
+  - loki-vl-proxy.yaml
   - alloy.yaml
   - httproute.yaml
   - policies
