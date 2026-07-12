@@ -1,7 +1,6 @@
 # Zitadel's database: CNPG Cluster on lvm-thin. CNPG auto-generates the app
-# user secret (zitadel-db-app: username/password/uri…) and, with superuser
-# access on, zitadel-db-superuser — used once by zitadel's init job to create
-# its schemas/grants.
+# user secret (zitadel-db-app: username/password/uri…); zitadel consumes the
+# uri key as its DSN and owns the database — no superuser handout.
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
@@ -9,7 +8,6 @@ metadata:
   namespace: zitadel
 spec:
   instances: 1
-  enableSuperuserAccess: true
   bootstrap:
     initdb:
       database: zitadel

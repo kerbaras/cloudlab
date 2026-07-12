@@ -34,30 +34,16 @@ spec:
         ExternalSecure: true
         TLS:
           Enabled: false
-        Database:
-          Postgres:
-            Host: zitadel-db-rw.zitadel.svc.cluster.local
-            Port: 5432
-            Database: zitadel
-            User:
-              Username: zitadel
-              SSL:
-                Mode: require
-            Admin:
-              Username: postgres
-              SSL:
-                Mode: require
-      env:
-        - name: ZITADEL_DATABASE_POSTGRES_USER_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: zitadel-db-app
-              key: password
-        - name: ZITADEL_DATABASE_POSTGRES_ADMIN_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: zitadel-db-superuser
-              key: password
+    # DSN mode (chart-recommended): the CNPG-generated app secret carries the
+    # full connection URI — no password duplication, no DB superuser needed
+    # (the zitadel user owns its pre-provisioned database). NOTE: top-level
+    # `env` — only this propagates into the chart's init/setup jobs.
+    env:
+      - name: ZITADEL_DATABASE_POSTGRES_DSN
+        valueFrom:
+          secretKeyRef:
+            name: zitadel-db-app
+            key: uri
     service:
       appProtocol: kubernetes.io/h2c
     replicaCount: 1
