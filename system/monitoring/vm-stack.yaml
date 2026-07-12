@@ -44,6 +44,14 @@ spec:
       enabled: false
     kubeEtcd:
       enabled: false
+    # vm-k8s-stack schema (NOT kube-prometheus-stack's additionalDataSources):
+    # extra datasources hang off defaultDatasources.extra.
+    defaultDatasources:
+      extra:
+        - name: VictoriaLogs
+          type: victoriametrics-logs-datasource
+          access: proxy
+          url: http://vlogs-server:9428
     grafana:
       enabled: true
       deploymentStrategy:
@@ -53,11 +61,6 @@ spec:
         size: 2Gi
       plugins:
         - victoriametrics-logs-datasource
-      additionalDataSources:
-        - name: VictoriaLogs
-          type: victoriametrics-logs-datasource
-          access: proxy
-          url: http://vlogs-server:9428
       grafana.ini:
         log:
           level: debug # TEMP: chasing oauth user-sync failure
