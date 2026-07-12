@@ -69,8 +69,6 @@ spec:
             isDefault: true
       victorialogs:
         datasources: []
-      alertmanager:
-        datasources: []
       extra:
         # Loki-type via loki-vl-proxy: Explore + Logs Drilldown, VL behind it
         - name: Loki (VictoriaLogs)
@@ -96,8 +94,6 @@ spec:
             - name: VictoriaLogs
               orgId: 1
             - name: victoriametrics-logs-datasource
-              orgId: 1
-            - name: Alertmanager
               orgId: 1
       grafana.ini:
         log:
