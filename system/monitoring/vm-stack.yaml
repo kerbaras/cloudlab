@@ -45,6 +45,8 @@ spec:
       enabled: false
     grafana:
       enabled: true
+      deploymentStrategy:
+        type: Recreate # RWO PV + RollingUpdate deadlocks on a single node
       persistence:
         enabled: true
         size: 2Gi
