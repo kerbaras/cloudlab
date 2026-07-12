@@ -12,6 +12,7 @@ resources:
   - identity-ks.yaml
   - external-dns-ks.yaml
   - monitoring-ks.yaml
+  - cloudnative-pg-ks.yaml
 patches:
   # IRSA-at-home for SOPS-KMS decryption: kustomize-controller assumes
   # cloudlab-flux-sops via web identity (no static key). This is an explicit
