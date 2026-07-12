@@ -69,6 +69,36 @@ spec:
             isDefault: true
       victorialogs:
         datasources: []
+      # override the chart's VT entry to add correlations (the chart still
+      # injects the URL): span → logs (by trace id, any namespace) and
+      # span → RED metrics (Alloy's spanmetrics connector output).
+      victoriatraces:
+        datasources:
+          - name: VictoriaTraces
+            access: proxy
+            uid: VictoriaTraces
+            type: jaeger
+            jsonData:
+              tracesToLogsV2:
+                datasourceUid: loki-vl
+                spanStartTimeShift: "-5m"
+                spanEndTimeShift: "5m"
+                customQuery: true
+                query: '{namespace=~".+"} |~ "${__span.traceId}"'
+              tracesToMetrics:
+                datasourceUid: VictoriaMetrics
+                spanStartTimeShift: "-2m"
+                spanEndTimeShift: "2m"
+                tags:
+                  - key: service.name
+                    value: service_name
+                queries:
+                  - name: Request rate
+                    query: sum(rate(traces_span_metrics_calls_total{$__tags}[5m]))
+                  - name: Error rate
+                    query: sum(rate(traces_span_metrics_calls_total{$__tags, status_code="STATUS_CODE_ERROR"}[5m]))
+                  - name: p95 latency
+                    query: histogram_quantile(0.95, sum(rate(traces_span_metrics_duration_seconds_bucket{$__tags}[5m])) by (le))
       extra:
         # Loki-type via loki-vl-proxy: Explore + Logs Drilldown, VL behind it
         - name: Loki (VictoriaLogs)

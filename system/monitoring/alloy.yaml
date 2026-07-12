@@ -86,12 +86,37 @@ spec:
 
           otelcol.processor.batch "default" {
             output {
-              traces = [otelcol.exporter.otlphttp.victoriatraces.input]
+              traces = [
+                otelcol.exporter.otlphttp.victoriatraces.input,
+                otelcol.connector.spanmetrics.default.input,
+              ]
             }
           }
 
           otelcol.exporter.otlphttp "victoriatraces" {
             client {
               endpoint = "http://vtsingle-vm-victoria-metrics-k8s-stack.monitoring.svc.cluster.local:10428/insert/opentelemetry"
+            }
+          }
+
+          // RED metrics derived from spans — the target of Grafana's
+          // trace-to-metrics links on the VictoriaTraces datasource.
+          otelcol.connector.spanmetrics "default" {
+            histogram {
+              explicit { }
+            }
+            namespace = "traces.span.metrics"
+            output {
+              metrics = [otelcol.exporter.prometheus.spanmetrics.input]
+            }
+          }
+
+          otelcol.exporter.prometheus "spanmetrics" {
+            forward_to = [prometheus.remote_write.victoriametrics.receiver]
+          }
+
+          prometheus.remote_write "victoriametrics" {
+            endpoint {
+              url = "http://vmsingle-vm-victoria-metrics-k8s-stack.monitoring.svc.cluster.local:8428/api/v1/write"
             }
           }
