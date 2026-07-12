@@ -1,0 +1,23 @@
+# NOT applied to the cluster (absent from kustomization.yaml) — sops-encrypted
+# storage only. The root token is the working break-glass; the recovery key
+# authorizes root regeneration. Shaped as a Secret so the stringData rule in
+# .sops.yaml encrypts the values.
+apiVersion: v1
+kind: Secret
+metadata:
+    name: openbao-break-glass
+    namespace: openbao
+type: Opaque
+stringData:
+    recovery-key-b64: ENC[AES256_GCM,data:a3Sx1knZBfyUK1LMTBfclGx1bkDiQAnCLMJM51RMWkdyHeCn+ERow5i6I1Y=,iv:buXsfVy/YavIpNMO8vTPrF4SWTu04s91qh1wWHKiewQ=,tag:S6vOkFwEviGi8S0fWJ2VRw==,type:str]
+    initial-root-token: ENC[AES256_GCM,data:tW1X4aysP8N1tRhDswtI0/DbWVN91kgSym4=,iv:dRJWZIl4y8pAk5pmN5b9L2lofg70s2ewFKsjKrHxkTY=,tag:cgvxquJeZ5qTK45+8hEj9Q==,type:str]
+sops:
+    kms:
+        - arn: arn:aws:kms:us-east-1:203447569320:key/99cadca6-ba46-4ef0-9df2-9f2678b7962e
+          created_at: "2026-07-12T08:16:57Z"
+          enc: AQICAHghjr0dewq1sbS0xUAI2yzWINRSDNS1+gWClJ5Dzg9INgEgIqcRdYdqo1MTJdqG6VU6AAAAfjB8BgkqhkiG9w0BBwagbzBtAgEAMGgGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQM1mh53HjhqzVn7vpqAgEQgDtJ290kALOe9kA7Z0lVPnUlpT71/RBBT7bjxIZrds4Fh+VmsoKK+ec7rblPqrG0FMM+Rgo8hpSfjCkzOw==
+          aws_profile: ""
+    lastmodified: "2026-07-12T08:16:58Z"
+    mac: ENC[AES256_GCM,data:5snA/n/uRnCVk5GEy8HcVDj54csRIA3Igr6xnsGjZrDxbazgiqeEUeeu0sLfmKkwlRstEsWNeX8kZfeJJQ+hX4EjlVU+DqBWMqZb6eVkMBzump57+rigMuyzAvWYedm6dI+eQ2SQ4sQRLoKNX85k4SU1Hwl7sljTHIrZUi+SSws=,iv:Lt5Ipfp/4doqZwx/deoG3255d/8L7k4opPAWNyZWZyA=,tag:W0jnEdtiFI/ouZHjFAy/cQ==,type:str]
+    encrypted_regex: ^(data|stringData)$
+    version: 3.11.0
