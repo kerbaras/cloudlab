@@ -1,0 +1,21 @@
+# Envoy Gateway: controller HelmRelease + GatewayClass/EnvoyProxy + the
+# namespace's Cilium policies, colocated. Same first-install retry story as
+# cert-manager (GatewayClass needs the chart's Gateway API CRDs).
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: envoy-gateway-system
+  namespace: flux-system
+spec:
+  interval: 10m
+  retryInterval: 2m
+  path: ./system/envoy-gateway-system
+  prune: true
+  wait: true
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-kms
+  sourceRef:
+    kind: GitRepository
+    name: flux-system

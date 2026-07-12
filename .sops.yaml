@@ -2,10 +2,12 @@
 # operator credentials (AWS_PROFILE=personal); Flux decrypts in-cluster with
 # the scoped cloudlab-flux-sops IAM user (kms:Decrypt on this key only).
 creation_rules:
-  # Kubernetes Secret manifests: keep apiVersion/kind/metadata plaintext so
-  # kustomize build + Flux can parse them before decryption.
-  - path_regex: kubernetes/.*\.sops\.ya?ml$
-    encrypted_regex: ^(data|stringData)$
+  # talhelper secrets are not Kubernetes manifests — encrypt the whole file.
+  - path_regex: talos/.*\.sops\.ya?ml$
     kms: arn:aws:kms:us-east-1:203447569320:key/99cadca6-ba46-4ef0-9df2-9f2678b7962e
+  # Everything else is a Kubernetes Secret manifest: keep apiVersion/kind/
+  # metadata plaintext so kustomize build + Flux can parse them before
+  # decryption.
   - path_regex: .*\.sops\.ya?ml$
+    encrypted_regex: ^(data|stringData)$
     kms: arn:aws:kms:us-east-1:203447569320:key/99cadca6-ba46-4ef0-9df2-9f2678b7962e

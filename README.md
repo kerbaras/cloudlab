@@ -16,24 +16,33 @@ Gateway, and the policy tiers.
 ## Repo layout
 
 ```
-├── ARCHITECTURE.md          canonical design record
-├── SUBNET-PLAN.md           addressing contract
-├── talos/                   talconfig · schematic · machineconfig patches
-├── tailscale/               tailnet ACL policy
-└── kubernetes/
-    ├── cilium/              Helm values (bootstrap layer — not GitOps-managed yet)
-    ├── networking/          LB pools · GatewayClass/Gateway · certs · routes
-    ├── policies/            baseline kustomize components · examples
-    └── flux/                flux-system · sources · HelmReleases · Kustomizations
+├── ARCHITECTURE.md           canonical design record
+├── SUBNET-PLAN.md            addressing contract
+├── talos/                    talconfig · schematic · machineconfig patches
+├── tailscale/                tailnet ACL policy
+├── apps/                     (arrives with the first app) one dir per app
+├── clusters/                 (arrives with cluster-a) CAPI workload clusters
+└── system/                   one dir per component; config + policies colocated
+    ├── flux-system/          gotk manifests · the per-component Kustomization DAG
+    ├── cilium/               bootstrap Helm values (by hand) · LB pools (GitOps)
+    ├── cert-manager/         HelmRelease · ClusterIssuer · Route53 DNS-01 secret
+    ├── envoy-gateway-system/ HelmRelease · GatewayClass · EnvoyProxy · ns policies
+    ├── edge/                 Gateway · wildcard cert · HTTP→S redirect · ns policies
+    └── policies/             reusable baseline components · examples
 ```
+
+Each `system/` dir is one Flux Kustomization; dependencies are explicit
+(`edge` depends on `cilium` + `cert-manager` + `envoy-gateway-system`). An
+app follows the same pattern: `apps/<name>/` plus a `<name>-ks.yaml` in
+`system/flux-system/`.
 
 ## CHECKME index
 
 | Where | What you must fill in |
 |---|---|
 | `talos/patches/tailscale.yaml` | copied from `.example`; tagged Tailscale auth key |
-| `kubernetes/networking/cert-issuer.yaml` | ACME contact email |
-| `kubernetes/networking/route53-credentials.sops.yaml.example` | scoped IAM key for DNS-01 |
+| `system/cert-manager/issuer.yaml` | ACME contact email |
+| `system/cert-manager/route53-credentials.sops.yaml.example` | scoped IAM key for DNS-01 |
 | DNS zone | `*.cloudlab.kerbaras.com` A → `65.21.143.224`, AAAA → edge address from `fd02::/64` (after Stage 4) |
 
 Already pinned from the live v1 box + tailnet: install disk (by serial), IPv4
@@ -129,7 +138,7 @@ traffic alone). The tailnet is the *preferred* path on top of that floor.
 ```bash
 helm repo add cilium https://helm.cilium.io
 helm install cilium cilium/cilium --version 1.19.5 \
-  -n kube-system -f kubernetes/cilium/values.yaml
+  -n kube-system -f system/cilium/values.yaml
 cilium status --wait
 ```
 
@@ -151,7 +160,7 @@ until Stage 5 flips the switch.
 1. Install the Flux controllers and hand them the repo (public, read-only —
    no repo credentials live in-cluster):
    ```bash
-   kubectl apply -k kubernetes/flux/flux-system
+   kubectl apply -k system/flux-system
    ```
 2. Give Flux AWS credentials for SOPS-KMS decryption (the one manual secret;
    everything downstream decrypts from Git). Fresh access key for the scoped
@@ -162,9 +171,12 @@ until Stage 5 flips the switch.
    kubectl -n flux-system create secret generic sops-kms \
      --from-literal=sops.aws-kms="$(printf 'aws_access_key_id: %s\naws_secret_access_key: %s' "$KEY_ID" "$SECRET")"
    ```
-3. Reconciliation lands in order: `infra` (Envoy Gateway + cert-manager) →
-   `networking` (pools, Gateway, issuer, wildcard cert, Route53 secret) →
-   `policies`. Watch with `flux get kustomizations --watch`.
+3. Reconciliation follows the dependency DAG: `cilium` (LB pools),
+   `cert-manager`, and `envoy-gateway-system` land in parallel, then `edge`
+   (Gateway, wildcard cert, redirect). Watch with
+   `flux get kustomizations --watch`. On a from-scratch install expect one
+   transient round of "CRD not found" retries while the HelmReleases install
+   the CRDs their neighbors consume — it converges within `retryInterval`.
 4. Watch the edge come up, then publish the AAAA record:
    ```bash
    kubectl -n envoy-gateway-system get svc   # EXTERNAL-IP: 65.21.143.224 + fd02::…
@@ -197,7 +209,7 @@ until Stage 5 flips the switch.
 **Policy audit → enforce:** run for a few days, watching
 `hubble observe --verdict AUDIT` for legitimate flows you forgot to allow.
 Then set `policy-audit-mode: "false"` in
-[`kubernetes/cilium/values.yaml`](./kubernetes/cilium/values.yaml),
+[`system/cilium/values.yaml`](./system/cilium/values.yaml),
 `helm upgrade`, and re-run the external checks.
 
 Phase 1 is done when every row above passes. Next: Phase 2/3 per

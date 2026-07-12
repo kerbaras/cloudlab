@@ -1,5 +1,5 @@
 # Cilium 1.19.x — bootstrap layer (ARCHITECTURE.md L2). Installed by hand in
-# README Stage 3; the only component not (yet) owned by Argo.
+# README Stage 3; the only component not (yet) owned by Flux.
 #   helm install cilium cilium/cilium --version 1.19.5 -n kube-system -f values.yaml
 
 # Talos: apiserver via KubePrism, no kube-proxy
@@ -47,7 +47,7 @@ enableIPv6Masquerade: false # v6 egress is native from fd01::/64 — no NAT ever
 bpf:
   masquerade: true
 
-# LB-IPAM pools live in kubernetes/networking/lb-pools.yaml. Routed addresses
+# LB-IPAM pools live in system/cilium/lb-pools.yaml. Routed addresses
 # arrive at the NIC by themselves — no L2 announcements, no BGP.
 externalIPs:
   enabled: true

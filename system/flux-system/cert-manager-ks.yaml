@@ -1,0 +1,22 @@
+# cert-manager: controller HelmRelease + ClusterIssuer + Route53 DNS-01
+# credentials, colocated. First install from scratch: the issuer apply fails
+# until the chart's CRDs land (~30s) — retryInterval bounds the noise, the ks
+# converges on its own.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: cert-manager
+  namespace: flux-system
+spec:
+  interval: 10m
+  retryInterval: 2m
+  path: ./system/cert-manager
+  prune: true
+  wait: true
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-kms
+  sourceRef:
+    kind: GitRepository
+    name: flux-system

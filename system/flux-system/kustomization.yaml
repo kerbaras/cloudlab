@@ -3,3 +3,7 @@ kind: Kustomization
 resources:
   - gotk-components.yaml
   - gotk-sync.yaml
+  - cilium-ks.yaml
+  - cert-manager-ks.yaml
+  - envoy-gateway-system-ks.yaml
+  - edge-ks.yaml

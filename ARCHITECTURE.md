@@ -287,7 +287,7 @@ Namespaces consume one of two kustomize components:
   probes) and default-deny egress with DNS funded through Cilium's L7 proxy.
   Cross-namespace and external flows become explicit per-app policies
   (postgres trio, gateway admission, `toFQDNs` allowlists — see
-  `kubernetes/policies/examples/`).
+  `system/policies/examples/`).
 
 Rollout is audit-first: `policy-audit-mode` on, watch
 `hubble observe --verdict AUDIT` for days, then enforce. Every workload
@@ -325,12 +325,16 @@ Pod egress:
 
 ## 7. GitOps & repo layout
 
-A Flux Kustomization tree from this repo; `dependsOn` orders CRD providers
-before consumers (infra → networking → policies). Cilium is the one
-bootstrap-installed component (no CNI, no pods, no GitOps) and may be adopted
-into Flux later. Secrets are SOPS-encrypted in-repo against AWS KMS
-(`alias/cloudlab-sops`; decision #15) and decrypted natively by Flux via a
-KMS-scoped IAM credential held in-cluster, until OpenBao assumes custody.
+The repo is organized by *component*, not by resource type: each `system/`
+directory is everything one component needs (HelmRelease, config CRs, its
+namespace's Cilium policies) and maps to exactly one Flux Kustomization.
+Ordering is explicit `dependsOn` (`edge` waits on `cilium`, `cert-manager`,
+`envoy-gateway-system`), not anonymous waves. Cilium's Helm layer is the one
+bootstrap-installed piece (no CNI, no pods, no GitOps); its GitOps-owned CRs
+(LB pools) live in `system/cilium/` beside the hand-applied values. Secrets
+are SOPS-encrypted in-repo against AWS KMS (`alias/cloudlab-sops`; decision
+#15) and decrypted natively by Flux via a KMS-scoped IAM credential held
+in-cluster, until OpenBao assumes custody.
 
 ```
 cloudlab/
@@ -339,16 +343,22 @@ cloudlab/
 ├── README.md                network-baseline rollout runbook
 ├── talos/                   machineconfig patches · talconfig · schematic
 ├── tailscale/               tailnet ACL policy
-├── kubernetes/
-│   ├── cilium/              Helm values (bootstrap layer)
-│   ├── networking/          LB pools · GatewayClass/Gateway · cert · routes
-│   ├── policies/            baseline components · example policies
-│   └── flux/                flux-system · sources · HelmReleases · Kustomizations
+├── system/                  one dir = one component = one Flux Kustomization
+│   ├── flux-system/         gotk manifests + the Kustomization DAG
+│   ├── cilium/              bootstrap Helm values · LB-IPAM pools
+│   ├── cert-manager/        HelmRelease · ClusterIssuer · DNS-01 secret
+│   ├── envoy-gateway-system/  HelmRelease · GatewayClass · EnvoyProxy · policies
+│   ├── edge/                Gateway · wildcard cert · redirect · policies
+│   └── policies/            reusable baseline components · examples
 └── (planned)
-    ├── clusters/            CAPI manifests per workload cluster (fdN* trios)
-    ├── platform/            kro RGDs · external-dns · observability
-    └── identity/            Zitadel · OpenBao · authn configs
+    ├── apps/                one dir per app (dashboard, Zitadel, OpenBao, …)
+    └── clusters/            CAPI manifests per workload cluster (fdN* trios)
 ```
+
+Note: `clusters/` here means *workload clusters as products* (L3), a
+deliberate deviation from the Flux-community convention where `clusters/`
+holds per-cluster Flux entrypoints — this repo has one management cluster and
+its entrypoint is `system/flux-system/`.
 
 ---
 
