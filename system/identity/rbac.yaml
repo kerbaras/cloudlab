@@ -1,6 +1,7 @@
-# RBAC for Zitadel-authenticated humans (apiserver oidc-* flags in
-# talos/patches/identity.yaml). Groups arrive as oidc:<project-role>, users
-# as oidc:<email> — both bindable; the admin role gets the keys.
+# RBAC for Zitadel-authenticated humans (apiserver structured
+# AuthenticationConfiguration in talos/patches/identity.yaml). Groups arrive
+# as oidc:<project-role>, users as oidc:<email> — both bindable; the admin
+# role gets the keys.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:

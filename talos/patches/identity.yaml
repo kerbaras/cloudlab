@@ -1,22 +1,62 @@
-# IRSA-at-home (ARCHITECTURE.md L6 flow 3): the cluster's SA issuer becomes a
-# public OIDC provider at oidc.cloudlab.kerbaras.com (served by
-# system/identity).
+# Identity wiring for the apiserver (ARCHITECTURE.md L6).
+#
+# IRSA-at-home (flow 3): the cluster's SA issuer becomes a public OIDC
+# provider at oidc.cloudlab.kerbaras.com (served by system/identity).
 # CAUTION: this extraArg REPLACES the default issuer — existing SA tokens go
 # Unauthorized (Cilium first, then everything). Changing it costs a full
 # pod-restart wave: cilium ds first, then every deployment.
+#
+# Humans → cluster via Zitadel (flow 1): structured AuthenticationConfiguration
+# instead of the legacy oidc-* flags (mutually exclusive — the apiserver EXITS
+# if both are set, so the flags must never return alongside the file). The
+# structured form is what makes the apiserver a multi-issuer relying party:
+# adding a trusted issuer (e.g. GitHub Actions) is one more `jwt:` entry.
+#
+# Talos 1.13 has no first-class home for this file (KubeAuthenticationConfig
+# lands in v1.14): machine.files may only write under /var, and extraVolumes
+# hostPath-mounts the directory into the static pod. The honest cost:
+# machine.files changes apply ON REBOOT only (the node rejects immediate
+# mode), so editing this file reboots the box — the apiserver's own hot-reload
+# of it never gets a chance to matter. One more reason to fold the content
+# verbatim into a KubeAuthenticationConfig document on the 1.14 upgrade.
 cluster:
   apiServer:
     extraArgs:
       service-account-issuer: https://oidc.cloudlab.kerbaras.com
       service-account-jwks-uri: https://oidc.cloudlab.kerbaras.com/openid/v1/jwks
-      # Humans → cluster via Zitadel (L6 flow 1): the "kubernetes" native app
-      # (device-code + authcode PKCE). A Zitadel Action flattens project roles
-      # into the groups claim; RBAC binds oidc:admin → cluster-admin
-      # (system/identity/rbac.yaml). Changing these flags only restarts the
-      # apiserver — no SA-token wave (unlike the issuer above).
-      oidc-issuer-url: https://auth.cloudlab.kerbaras.com
-      oidc-client-id: "381423189042987010"
-      oidc-username-claim: email
-      oidc-username-prefix: "oidc:"
-      oidc-groups-claim: groups
-      oidc-groups-prefix: "oidc:"
+      authentication-config: /var/lib/kube-apiserver-authn/authentication-config.yaml
+    extraVolumes:
+      - hostPath: /var/lib/kube-apiserver-authn
+        mountPath: /var/lib/kube-apiserver-authn
+        readonly: true
+machine:
+  files:
+    - path: /var/lib/kube-apiserver-authn/authentication-config.yaml
+      permissions: 0o644
+      op: create
+      # No `anonymous:` stanza here — it's mutually exclusive with the
+      # --anonymous-auth flag Talos already sets.
+      content: |
+        apiVersion: apiserver.config.k8s.io/v1
+        kind: AuthenticationConfiguration
+        jwt:
+          # Zitadel, the "kubernetes" native app (device-code + authcode PKCE;
+          # kubelogin on clients). A Zitadel Action flattens project roles into
+          # the groups claim; RBAC binds oidc:admin → cluster-admin
+          # (system/identity/rbac.yaml).
+          - issuer:
+              url: https://auth.cloudlab.kerbaras.com
+              audiences:
+                - "381423189042987010"
+            claimValidationRules:
+              # The legacy flags implied this when username-claim=email:
+              # reject tokens whose email_verified is present and false.
+              - expression: 'claims.?email_verified.orValue(true) == true'
+                message: email_verified is false
+            claimMappings:
+              username:
+                claim: email
+                prefix: "oidc:"
+              groups:
+                claim: groups
+                prefix: "oidc:"
