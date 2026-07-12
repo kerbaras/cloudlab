@@ -1,0 +1,39 @@
+# Push-triggered GitOps: GitHub POSTs to hooks.cloudlab.kerbaras.com/hook/…
+# and notification-controller nudges the GitRepository immediately; the
+# Kustomization DAG cascades from the new artifact. Intervals remain the
+# fallback when the webhook misses.
+apiVersion: notification.toolkit.fluxcd.io/v1
+kind: Receiver
+metadata:
+  name: github-push
+  namespace: flux-system
+spec:
+  type: github
+  events:
+    - ping
+    - push
+  secretRef:
+    name: github-webhook-token
+  resources:
+    - apiVersion: source.toolkit.fluxcd.io/v1
+      kind: GitRepository
+      name: flux-system
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: flux-webhook
+  namespace: flux-system
+spec:
+  parentRefs:
+    - name: edge
+      namespace: edge
+      sectionName: https
+  hostnames:
+    - hooks.cloudlab.kerbaras.com
+  rules:
+    - matches:
+        - path: { type: PathPrefix, value: /hook/ }
+      backendRefs:
+        - name: webhook-receiver
+          port: 80

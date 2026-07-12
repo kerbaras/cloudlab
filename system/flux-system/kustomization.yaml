@@ -3,6 +3,8 @@ kind: Kustomization
 resources:
   - gotk-components.yaml
   - gotk-sync.yaml
+  - webhook-token.sops.yaml
+  - receiver.yaml
   - cilium-ks.yaml
   - cert-manager-ks.yaml
   - envoy-gateway-system-ks.yaml
@@ -16,6 +18,15 @@ resources:
   - zitadel-ks.yaml
   - homepage-ks.yaml
 patches:
+  # the flux-system namespace hosts the webhook HTTPRoute → key 1 of the
+  # two-key launch
+  - patch: |
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: flux-system
+        labels:
+          cloudlab.kerbaras.com/gateway-access: "true"
   # IRSA-at-home for SOPS-KMS decryption: kustomize-controller assumes
   # cloudlab-flux-sops via web identity (no static key). This is an explicit
   # patch rather than the Kyverno injection so a cold rebuild works before

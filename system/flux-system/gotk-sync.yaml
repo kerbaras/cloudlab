@@ -19,6 +19,8 @@ spec:
   interval: 10m
   path: ./system/flux-system
   prune: true
+  decryption:
+    provider: sops # the webhook token lives here, KMS via web identity
   sourceRef:
     kind: GitRepository
     name: flux-system

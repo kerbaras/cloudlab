@@ -1,0 +1,19 @@
+# Shared secret between GitHub's webhook and the Flux Receiver.
+apiVersion: v1
+kind: Secret
+metadata:
+    name: github-webhook-token
+    namespace: flux-system
+type: Opaque
+stringData:
+    token: ENC[AES256_GCM,data:JU+LN6lt4Y8xf++l9bFK0nqYa4ESQ/vGlC5ILKmA1HFPZxdY2O2oQg==,iv:VxEtEosbEmug+wNHwNs1d5WMJcqyZn8Sb7Gq1jSEGk8=,tag:4l+ziEkg4mGASCJ8NrB+pg==,type:str]
+sops:
+    kms:
+        - arn: arn:aws:kms:us-east-1:203447569320:key/99cadca6-ba46-4ef0-9df2-9f2678b7962e
+          created_at: "2026-07-12T05:53:41Z"
+          enc: AQICAHghjr0dewq1sbS0xUAI2yzWINRSDNS1+gWClJ5Dzg9INgGTTHPep9PkQRlBb/Dj0oltAAAAfjB8BgkqhkiG9w0BBwagbzBtAgEAMGgGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMq63gdc7Uu1lR9VM/AgEQgDvYwngpKA2I1e90J3jM36wyoh5FkpEo/pbmfAdxlZri0sdKpYgJFYxiLgSst/Lz00Xwm6gDvH7uVvm9fg==
+          aws_profile: ""
+    lastmodified: "2026-07-12T05:53:42Z"
+    mac: ENC[AES256_GCM,data:0TW1K/eFXYEwCSNtsxcJSiM5JidHBqg5m1jEZj6aEdjcHR8Jni7eJYSkGEnsaoPYQMow8nr58dHulidXoazHGPYXDMn8bPMardE107m/Jq887hbD+lKko9p/1Eu7RRz0GzVnL0u7TN1srr6iXfPqLsPLOujlXvCYAvxEVjxQB0g=,iv:VNYhXlVUhCnjMbNsYDi6qA3hTKysQ2jFbDdIHBH2d8U=,tag:YEmItACrgN3wjWAE7AMXaw==,type:str]
+    encrypted_regex: ^(data|stringData)$
+    version: 3.11.0
