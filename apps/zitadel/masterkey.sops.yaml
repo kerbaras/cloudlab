@@ -1,0 +1,19 @@
+# Zitadel masterkey (symmetric encryption root for its secrets at rest).
+apiVersion: v1
+kind: Secret
+metadata:
+    name: zitadel-masterkey
+    namespace: zitadel
+type: Opaque
+stringData:
+    masterkey: ENC[AES256_GCM,data:TIeSzFXulSaZ/h5lvjCNm8rA9xRr1Ixzhoidr232DP8=,iv:ry+CqJMrW96GyuzXloFRgnKYatDmLTKoKtbVqekUYys=,tag:espM56voZTZbDx/EFHdsog==,type:str]
+sops:
+    kms:
+        - arn: arn:aws:kms:us-east-1:203447569320:key/99cadca6-ba46-4ef0-9df2-9f2678b7962e
+          created_at: "2026-07-12T04:14:28Z"
+          enc: AQICAHghjr0dewq1sbS0xUAI2yzWINRSDNS1+gWClJ5Dzg9INgGjnDcSdbQIHnJD2Y+8lLJkAAAAfjB8BgkqhkiG9w0BBwagbzBtAgEAMGgGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMUqmr36e9D4D/MjyAAgEQgDtlkRXx0vVvvOVmvbNhdqNs1aWk/C854Dzi1ZP07mgxz5NKmXMvf8B7eP4gSNemSI4lxB0FI2s2VLqxQw==
+          aws_profile: ""
+    lastmodified: "2026-07-12T04:14:29Z"
+    mac: ENC[AES256_GCM,data:guvPdeoB9x0EWg8RsdcipwLcDOMKK0JfSxI62DSH+cxh7tBPp/NcGuB3uMr7INBGy0yrJ++i4wr+IEc2KmZNxahEQGK2dZ9w7NWuQdpxDRe49GWSkJhN70fvk00yRZUjMPr8RKzm9ROvd2koAEPLjaknv8mJN3CB0kRjNGgpI8Q=,iv:1UqvUCvJsMpaKiiFMgM8yiNlPWSJBPUxy10HZ2ONSxU=,tag:cy6X8fQgrnrcux4dmt46YA==,type:str]
+    encrypted_regex: ^(data|stringData)$
+    version: 3.11.0

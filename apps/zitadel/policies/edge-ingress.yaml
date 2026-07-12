@@ -1,0 +1,36 @@
+# Key 2 of the two-key launch: edge gateway → zitadel API + login UI.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-edge-gateway
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: zitadel
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: envoy-gateway-system
+            gateway.envoyproxy.io/owning-gateway-name: edge
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-edge-gateway-login
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: zitadel-login
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: envoy-gateway-system
+            gateway.envoyproxy.io/owning-gateway-name: edge
+      toPorts:
+        - ports:
+            - port: "3000"
+              protocol: TCP

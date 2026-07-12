@@ -1,0 +1,58 @@
+# Homepage (gethomepage.dev): the cloudlab hub at home.cloudlab.kerbaras.com.
+# Services self-register: any HTTPRoute annotated gethomepage.dev/enabled
+# shows up — adding an app to the dashboard is part of shipping the app.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: homepage
+  namespace: flux-system
+spec:
+  interval: 30m
+  targetNamespace: homepage
+  chart:
+    spec:
+      chart: homepage
+      version: 2.1.0
+      sourceRef:
+        kind: HelmRepository
+        name: jameswynn
+        namespace: flux-system
+  values:
+    enableRbac: true
+    serviceAccount:
+      create: true
+      name: homepage
+    env:
+      - name: HOMEPAGE_ALLOWED_HOSTS
+        value: home.cloudlab.kerbaras.com
+    config:
+      kubernetes:
+        mode: cluster
+        gateway: true
+      settings:
+        title: cloudlab
+        headerStyle: clean
+        statusStyle: dot
+      widgets:
+        - search:
+            provider: duckduckgo
+            target: _blank
+        - datetime:
+            text_size: xl
+            format:
+              timeStyle: short
+              dateStyle: long
+      bookmarks:
+        - Operate:
+            - Repo:
+                - icon: github.png
+                  href: https://github.com/kerbaras/cloudlab
+            - Hetzner Robot:
+                - icon: hetzner.png
+                  href: https://robot.hetzner.com
+            - Tailscale:
+                - icon: tailscale.png
+                  href: https://login.tailscale.com/admin
+            - AWS Console:
+                - icon: aws.png
+                  href: https://console.aws.amazon.com

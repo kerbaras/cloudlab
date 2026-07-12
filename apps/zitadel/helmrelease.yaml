@@ -1,0 +1,57 @@
+# Zitadel (ARCHITECTURE.md L6, decision #10): the humans-and-apps IdP.
+# TLS terminates at the edge; the API speaks h2c behind it (appProtocol).
+# First login: zitadel-admin@zitadel.zitadel.cloudlab.kerbaras.com /
+# Password1! — forced change on first login.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: zitadel
+  namespace: flux-system
+spec:
+  interval: 30m
+  timeout: 15m
+  targetNamespace: zitadel
+  chart:
+    spec:
+      chart: zitadel
+      version: 10.0.4
+      sourceRef:
+        kind: HelmRepository
+        name: zitadel
+        namespace: flux-system
+  values:
+    zitadel:
+      masterkeySecretName: zitadel-masterkey
+      configmapConfig:
+        ExternalDomain: zitadel.cloudlab.kerbaras.com
+        ExternalPort: 443
+        ExternalSecure: true
+        TLS:
+          Enabled: false
+        Database:
+          Postgres:
+            Host: zitadel-db-rw.zitadel.svc.cluster.local
+            Port: 5432
+            Database: zitadel
+            User:
+              Username: zitadel
+              SSL:
+                Mode: require
+            Admin:
+              Username: postgres
+              SSL:
+                Mode: require
+      env:
+        - name: ZITADEL_DATABASE_POSTGRES_USER_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: zitadel-db-app
+              key: password
+        - name: ZITADEL_DATABASE_POSTGRES_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: zitadel-db-superuser
+              key: password
+    service:
+      appProtocol: kubernetes.io/h2c
+    replicaCount: 1
