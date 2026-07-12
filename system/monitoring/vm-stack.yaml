@@ -47,6 +47,10 @@ spec:
     # vm-k8s-stack schema (NOT kube-prometheus-stack's additionalDataSources):
     # extra datasources hang off defaultDatasources.extra.
     defaultDatasources:
+      # the chart's built-in VL datasource only gets a URL when its own
+      # vlsingle is enabled; ours is a separate release — disable the stub
+      victorialogs:
+        datasources: []
       extra:
         - name: VictoriaLogs
           type: victoriametrics-logs-datasource
