@@ -1,0 +1,25 @@
+# No gateway OIDC here on purpose: bao brings its own authn (token, k8s,
+# OIDC-to-Zitadel later) and the API must stay reachable for CLI/workloads.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: openbao
+  namespace: openbao
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: OpenBao
+    gethomepage.dev/group: Platform
+    gethomepage.dev/icon: vault.png
+    gethomepage.dev/description: Secrets custody
+    gethomepage.dev/href: https://bao.cloudlab.kerbaras.com/ui/
+spec:
+  parentRefs:
+    - name: edge
+      namespace: edge
+      sectionName: https
+  hostnames:
+    - bao.cloudlab.kerbaras.com
+  rules:
+    - backendRefs:
+        - name: openbao
+          port: 8200

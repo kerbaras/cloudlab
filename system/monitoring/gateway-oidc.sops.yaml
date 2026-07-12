@@ -1,0 +1,20 @@
+# Confidential client for gateway-level OIDC (Envoy SecurityPolicy → Zitadel).
+# EG expects the exact key name "client-secret".
+apiVersion: v1
+kind: Secret
+metadata:
+    name: gateway-oidc
+    namespace: monitoring
+type: Opaque
+stringData:
+    client-secret: ENC[AES256_GCM,data:jBgHsoo8iaqbc+orsxDw47t74M0gTfLAWrzUTeq3nbv7spdK6CUM2E1NZzKaW0Dv+xHFuBLFOeePWOmAKkQ+Eg==,iv:llKgnXdWx+ijd85Ofnyem3fYubIHKli1PrjdRiyndKg=,tag:SSmfVHUeP1lA7wRcEHGwDA==,type:str]
+sops:
+    kms:
+        - arn: arn:aws:kms:us-east-1:203447569320:key/99cadca6-ba46-4ef0-9df2-9f2678b7962e
+          created_at: "2026-07-12T08:11:38Z"
+          enc: AQICAHghjr0dewq1sbS0xUAI2yzWINRSDNS1+gWClJ5Dzg9INgFOlI2puRhQsRunw2T1SmUgAAAAfjB8BgkqhkiG9w0BBwagbzBtAgEAMGgGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMiRyLpp75dhdyjI3MAgEQgDsv2o29aMMIonViH8knVTaEerjWEbeusBQwE4SUsm9+C2/WMijr3YmyoSVVqTh+Dmp9CGb5LMTsk7te+g==
+          aws_profile: ""
+    lastmodified: "2026-07-12T08:11:39Z"
+    mac: ENC[AES256_GCM,data:DL5Z/0x7EHH0x56iV4GKdGy9XFDbmJ9G/hFikMt2VAUAfxQLt2YBrQ9HRMJTpILKu3tpijWxXFVm0hYaIYgBGJjRnmOfQqUJtfgby6PjKJplalv3baVgD0fqs9Jbc2FSEXhLpvkh6Ymm+38TKCyaNT++eb5P1ekRVmMgFrwyjz4=,iv:+8eo3Klx1WuxaxriPpqTJs7iknEwCOcd1A6bWyrjbq4=,tag:9JiOW+QRWw2Fgc9e4FIIlA==,type:str]
+    encrypted_regex: ^(data|stringData)$
+    version: 3.11.0

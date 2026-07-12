@@ -1,0 +1,17 @@
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-edge-gateway
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: openbao
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: envoy-gateway-system
+            gateway.envoyproxy.io/owning-gateway-name: edge
+      toPorts:
+        - ports:
+            - port: "8200"
+              protocol: TCP

@@ -1,0 +1,72 @@
+# OpenBao (ARCHITECTURE.md L6 / Phase 4): runtime secret custody. Raft on
+# lvm-thin, single instance (one node = one bao). Auto-unseal is keyless:
+# the SA annotation triggers the Kyverno pod-identity injection and the
+# awskms seal walks the SDK default chain to the cloudlab-openbao role.
+# Recovery keys + initial root token live sops-encrypted in break-glass.sops.yaml
+# (NOT applied to the cluster).
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: openbao
+  namespace: flux-system
+spec:
+  interval: 30m
+  targetNamespace: openbao
+  releaseName: openbao
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  chart:
+    spec:
+      chart: openbao
+      version: 0.28.4
+      sourceRef:
+        kind: HelmRepository
+        name: openbao
+        namespace: flux-system
+  values:
+    injector:
+      enabled: false # External Secrets Operator is the consumption path, not sidecars
+    ui:
+      enabled: true
+    server:
+      serviceAccount:
+        create: true
+        name: openbao
+        annotations:
+          eks.amazonaws.com/role-arn: arn:aws:iam::203447569320:role/cloudlab-openbao
+      dataStorage:
+        enabled: true
+        size: 10Gi
+      # let the pod go Ready while sealed/uninitialized so init is possible
+      readinessProbe:
+        enabled: true
+        path: /v1/sys/health?standbyok=true&sealedcode=204&uninitcode=204
+      ha:
+        enabled: true
+        replicas: 1
+        raft:
+          enabled: true
+          config: |
+            ui = true
+            disable_mlock = true
+
+            listener "tcp" {
+              tls_disable = 1
+              address = "[::]:8200"
+              cluster_address = "[::]:8201"
+            }
+
+            storage "raft" {
+              path = "/openbao/data"
+            }
+
+            service_registration "kubernetes" {}
+
+            seal "awskms" {
+              region     = "us-east-1"
+              kms_key_id = "alias/cloudlab-openbao-unseal"
+            }

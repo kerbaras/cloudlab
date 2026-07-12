@@ -9,4 +9,6 @@ resources:
   - alloy.yaml
   - referencegrant-envoy-otlp.yaml
   - httproute.yaml
+  - gateway-oidc.sops.yaml
+  - sso-uis.yaml
   - policies

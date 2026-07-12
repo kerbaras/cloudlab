@@ -16,3 +16,42 @@ spec:
         - ports:
             - port: "3000"
               protocol: TCP
+---
+# edge gateway → VictoriaLogs vmui (SSO enforced at the gateway)
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-edge-gateway-vlogs
+spec:
+  endpointSelector:
+    matchLabels:
+      app: server
+      app.kubernetes.io/instance: vlogs
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: envoy-gateway-system
+            gateway.envoyproxy.io/owning-gateway-name: edge
+      toPorts:
+        - ports:
+            - port: "9428"
+              protocol: TCP
+---
+# edge gateway → Alertmanager (SSO enforced at the gateway)
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-edge-gateway-alertmanager
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: vmalertmanager
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: envoy-gateway-system
+            gateway.envoyproxy.io/owning-gateway-name: edge
+      toPorts:
+        - ports:
+            - port: "9093"
+              protocol: TCP
