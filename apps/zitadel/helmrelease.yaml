@@ -1,8 +1,8 @@
 # Zitadel (ARCHITECTURE.md L6, decision #10): the humans-and-apps IdP.
 # TLS terminates at the edge; the API speaks h2c behind it (appProtocol).
-# No human superadmin exists: bootstrap is a machine account whose PAT lands
-# in the cloudlab-bootstrap secret (zitadel ns) — the break-glass credential.
-# Humans hold IAM_OWNER and sign in with passkeys / external IdP only.
+# No human superadmin exists: bootstrap is a machine account (iam-admin)
+# whose PAT lands in the iam-admin-pat secret (zitadel ns) — the break-glass
+# credential. Humans hold IAM_OWNER and sign in with passkeys / external IdP.
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:

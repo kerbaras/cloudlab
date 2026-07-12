@@ -67,7 +67,7 @@ spec:
           enabled: true
           name: Zitadel
           allow_sign_up: true
-          client_id: "381411174509510690"
+          client_id: "381413663090737154" # PKCE app in the cloudlab Zitadel project (API-created)
           scopes: openid profile email
           auth_url: https://auth.cloudlab.kerbaras.com/oauth/v2/authorize
           token_url: https://auth.cloudlab.kerbaras.com/oauth/v2/token
