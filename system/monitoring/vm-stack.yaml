@@ -68,7 +68,7 @@ spec:
           name: Zitadel
           allow_sign_up: true
           client_id: "381413663090737154" # PKCE app in the cloudlab Zitadel project (API-created)
-          scopes: openid profile email
+          scopes: openid profile email urn:zitadel:iam:org:project:roles
           auth_url: https://auth.cloudlab.kerbaras.com/oauth/v2/authorize
           token_url: https://auth.cloudlab.kerbaras.com/oauth/v2/token
           api_url: https://auth.cloudlab.kerbaras.com/oidc/v1/userinfo
@@ -76,4 +76,7 @@ spec:
           email_attribute_path: email
           login_attribute_path: preferred_username
           name_attribute_path: name
-          skip_org_role_sync: true # promote users in Grafana; Zitadel role mapping later
+          # Zitadel project role "admin" == the admin group: full Grafana
+          # admin; everyone else lands as Viewer.
+          allow_assign_grafana_admin: true
+          role_attribute_path: contains(keys("urn:zitadel:iam:org:project:roles" || `{}`), 'admin') && 'GrafanaAdmin' || 'Viewer'
