@@ -47,6 +47,11 @@ enableIPv6Masquerade: false # v6 egress is native from fd01::/64 — no NAT ever
 bpf:
   masquerade: true
 
+# Multus (system/multus) writes 00-multus.conf beside cilium's conflist and
+# delegates to it; exclusive mode would evict that config on agent restart.
+cni:
+  exclusive: false
+
 # LB-IPAM pools live in system/cilium/lb-pools.yaml. Routed addresses
 # arrive at the NIC by themselves — no L2 announcements, no BGP.
 externalIPs:

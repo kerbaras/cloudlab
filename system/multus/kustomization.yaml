@@ -1,0 +1,9 @@
+# Multus (ARCHITECTURE.md Phase 2): meta-CNI for secondary pod/VM interfaces.
+# Cilium stays the primary CNI — multus wraps it as delegate and adds
+# NetworkAttachmentDefinition-declared extras (tenant bridges, macvlan).
+# Lives in kube-system like the rest of the node plumbing.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - nad-crd.yaml
+  - daemonset.yaml

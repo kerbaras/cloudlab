@@ -6,6 +6,7 @@ resources:
   - webhook-token.sops.yaml
   - receiver.yaml
   - cilium-ks.yaml
+  - multus-ks.yaml
   - cert-manager-ks.yaml
   - envoy-gateway-system-ks.yaml
   - edge-ks.yaml
