@@ -1,0 +1,20 @@
+# The NLB-for-control-planes, wired for real (ARCHITECTURE.md L4 §:6443):
+# SNI cluster-a.k8s.cloudlab.kerbaras.com → TLS passthrough → capk's
+# control-plane Service. The cluster's own certs and authn stay intact;
+# external-dns publishes the record from this hostname.
+apiVersion: gateway.networking.k8s.io/v1
+kind: TLSRoute
+metadata:
+  name: cluster-a-apiserver
+  namespace: cluster-a
+spec:
+  parentRefs:
+    - name: edge
+      namespace: edge
+      sectionName: controlplanes
+  hostnames:
+    - cluster-a.k8s.cloudlab.kerbaras.com
+  rules:
+    - backendRefs:
+        - name: cluster-a-lb # created by capk from controlPlaneServiceTemplate
+          port: 6443

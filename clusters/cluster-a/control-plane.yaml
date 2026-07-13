@@ -1,0 +1,86 @@
+# Control plane: one Talos VM (one node = no HA theater; replicas is the
+# knob when box #2 exists). Boot disk is the factory *openstack* image —
+# capk hardcodes cloudInitConfigDrive, and Talos' nocloud platform only
+# reads cidata volumes; the openstack platform reads config-2, which is
+# exactly what KubeVirt's ConfigDrive emits.
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+kind: KubevirtMachineTemplate
+metadata:
+  name: cluster-a-cp
+  namespace: cluster-a
+spec:
+  template:
+    spec:
+      virtualMachineBootstrapCheck:
+        checkStrategy: none # Talos has no SSH — the node either joins or it didn't
+      virtualMachineTemplate:
+        metadata:
+          namespace: cluster-a
+        spec:
+          runStrategy: Always
+          dataVolumeTemplates:
+            - metadata:
+                name: boot # capk prefixes with the machine name — unique per VM
+              spec:
+                pvc:
+                  accessModes: [ReadWriteOnce] # lvm-thin: spell it out (see system/cdi)
+                  # Filesystem, not Block: lvm-localpv block devices land root-owned
+                  # and CDI's non-root importer can't open them (preflight-tested)
+                  volumeMode: Filesystem
+                  storageClassName: lvm-thin
+                  resources:
+                    requests:
+                      storage: 15Gi
+                source:
+                  http:
+                    url: https://factory.talos.dev/image/376567988ad370138ad8b2698212367b8edcb69b5fd68c80be1f2ec7d603b4ba/v1.13.6/openstack-amd64.raw.xz
+          template:
+            spec:
+              evictionStrategy: External
+              domain:
+                cpu:
+                  cores: 2
+                memory:
+                  guest: 4Gi
+                devices:
+                  networkInterfaceMultiqueue: true
+                  rng: {}
+                  disks:
+                    - name: boot
+                      disk:
+                        bus: virtio
+              volumes:
+                - name: boot
+                  dataVolume:
+                    name: boot
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
+kind: TalosControlPlane
+metadata:
+  name: cluster-a-cp
+  namespace: cluster-a
+spec:
+  version: v1.36.2
+  replicas: 1
+  infrastructureTemplate:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+    kind: KubevirtMachineTemplate
+    name: cluster-a-cp
+    namespace: cluster-a
+  controlPlaneConfig:
+    controlplane:
+      generateType: controlplane
+      talosVersion: v1.12 # config contract, not runtime — v1.13.6 images accept it
+      configPatches:
+        # the public name rides SNI passthrough; the apiserver cert must vouch for it
+        - op: add
+          path: /cluster/apiServer/certSANs
+          value:
+            - cluster-a.k8s.cloudlab.kerbaras.com
+        # upgrades keep the openstack platform (kernel args live in the installer)
+        - op: replace
+          path: /machine/install
+          value:
+            disk: /dev/vda
+            image: factory.talos.dev/openstack-installer/376567988ad370138ad8b2698212367b8edcb69b5fd68c80be1f2ec7d603b4ba:v1.13.6
+            wipe: false

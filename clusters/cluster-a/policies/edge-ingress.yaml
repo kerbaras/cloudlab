@@ -1,0 +1,21 @@
+# Key 2 of the two-key launch: the edge may reach the control-plane VMs'
+# apiserver port, nothing else. capk labels VM pods with
+# cluster.x-k8s.io/role; VM-to-VM and capi-controller traffic rides the
+# baseline's cluster allowance.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-edge-gateway
+spec:
+  endpointSelector:
+    matchLabels:
+      cluster.x-k8s.io/role: control-plane
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: envoy-gateway-system
+            gateway.envoyproxy.io/owning-gateway-name: edge
+      toPorts:
+        - ports:
+            - port: "6443"
+              protocol: TCP

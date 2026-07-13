@@ -1,0 +1,100 @@
+# Workers: one 8Gi VM to start — §8's budget allows a second; replicas is
+# the only knob to turn.
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+kind: KubevirtMachineTemplate
+metadata:
+  name: cluster-a-workers
+  namespace: cluster-a
+spec:
+  template:
+    spec:
+      virtualMachineBootstrapCheck:
+        checkStrategy: none
+      virtualMachineTemplate:
+        metadata:
+          namespace: cluster-a
+        spec:
+          runStrategy: Always
+          dataVolumeTemplates:
+            - metadata:
+                name: boot
+              spec:
+                pvc:
+                  accessModes: [ReadWriteOnce]
+                  volumeMode: Filesystem # see control-plane.yaml
+                  storageClassName: lvm-thin
+                  resources:
+                    requests:
+                      storage: 20Gi
+                source:
+                  http:
+                    url: https://factory.talos.dev/image/376567988ad370138ad8b2698212367b8edcb69b5fd68c80be1f2ec7d603b4ba/v1.13.6/openstack-amd64.raw.xz
+          template:
+            spec:
+              evictionStrategy: External
+              domain:
+                cpu:
+                  cores: 4
+                memory:
+                  guest: 8Gi
+                devices:
+                  networkInterfaceMultiqueue: true
+                  rng: {}
+                  disks:
+                    - name: boot
+                      disk:
+                        bus: virtio
+              volumes:
+                - name: boot
+                  dataVolume:
+                    name: boot
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
+kind: TalosConfigTemplate
+metadata:
+  name: cluster-a-workers
+  namespace: cluster-a
+spec:
+  template:
+    spec:
+      generateType: join
+      talosVersion: v1.12
+      configPatches:
+        - op: replace
+          path: /machine/install
+          value:
+            disk: /dev/vda
+            image: factory.talos.dev/openstack-installer/376567988ad370138ad8b2698212367b8edcb69b5fd68c80be1f2ec7d603b4ba:v1.13.6
+            wipe: false
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineDeployment
+metadata:
+  name: cluster-a-workers
+  namespace: cluster-a
+  labels:
+    cluster.x-k8s.io/cluster-name: cluster-a
+spec:
+  clusterName: cluster-a
+  replicas: 1
+  selector:
+    matchLabels:
+      cluster.x-k8s.io/cluster-name: cluster-a
+  template:
+    metadata:
+      labels:
+        cluster.x-k8s.io/cluster-name: cluster-a
+    spec:
+      clusterName: cluster-a
+      version: v1.36.2
+      bootstrap:
+        configRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
+          kind: TalosConfigTemplate
+          name: cluster-a-workers
+          namespace: cluster-a
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+        kind: KubevirtMachineTemplate
+        name: cluster-a-workers
+        namespace: cluster-a

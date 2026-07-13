@@ -1,0 +1,44 @@
+# cluster-a: the first stamped fleet member (ARCHITECTURE.md Phase 3) —
+# Talos-in-VM via CAPI + capk + CABPT/CACPPT.
+#
+# Nodes ride the mgmt pod network (capk masquerade — the well-trodden path);
+# the fd10 Multus bridge remains the upgrade for routable node addressing
+# (SUBNET-PLAN §2.2). Internal ranges are deliberately NOT the mgmt ranges:
+# the controlPlaneEndpoint the nodes dial is a mgmt ClusterIP, and a shared
+# 10.96/12 would let cluster-a's own service allocator shadow it.
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  name: cluster-a
+  namespace: cluster-a
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks:
+        - 10.243.0.0/16
+    services:
+      cidrBlocks:
+        - 10.95.0.0/16
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+    kind: KubevirtCluster
+    name: cluster-a
+    namespace: cluster-a
+  controlPlaneRef:
+    apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
+    kind: TalosControlPlane
+    name: cluster-a-cp
+    namespace: cluster-a
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
+kind: KubevirtCluster
+metadata:
+  name: cluster-a
+  namespace: cluster-a
+spec:
+  # ClusterIP is the whole story: in-cluster reach for CAPI, tailnet reach
+  # for operators (10.96/12 is advertised), and the edge TLSRoute for the
+  # world — no LB address spent on a control plane.
+  controlPlaneServiceTemplate:
+    spec:
+      type: ClusterIP

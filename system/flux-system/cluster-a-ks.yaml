@@ -1,0 +1,24 @@
+# cluster-a (Phase 3): the first workload cluster. Provisioning is slow by
+# nature — two ~300 MB factory image imports plus Talos bootstrap — hence
+# the long timeout. wait gates on the CAPI CRs' Ready conditions.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: cluster-a
+  namespace: flux-system
+spec:
+  interval: 10m
+  retryInterval: 2m
+  timeout: 30m
+  path: ./clusters/cluster-a
+  prune: true
+  wait: true
+  dependsOn:
+    - name: capi # the provider quartet
+    - name: cdi # DataVolume imports
+    - name: edge # the TLSRoute's Gateway
+  decryption:
+    provider: sops # KMS via kustomize-controller's web identity (no secretRef)
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
