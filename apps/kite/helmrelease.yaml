@@ -70,12 +70,16 @@ spec:
           # vmsingle speaks the Prometheus query API — charts light up free
           prometheusURL: http://vmsingle-vm-victoria-metrics-k8s-stack.monitoring.svc.cluster.local:8428
       oauth:
-        # CHECKME: create a "kite" web app (authorization code) in the same
-        # Zitadel project as the "kubernetes" app so the roles→groups Action
-        # applies; redirect URI https://kite.cloudlab.kerbaras.com/api/auth/callback.
-        # Pin the client ID here and put the secret in kite-secrets.sops.yaml.
+        # Zitadel "kite" web app, same project as the "kubernetes" app so the
+        # roles→groups Action applies; redirect URI
+        # https://kite.cloudlab.kerbaras.com/api/auth/callback.
+        # NOTE: kite does not implement PKCE — its token exchange sends
+        # client_secret in the POST body and no code_verifier
+        # (pkg/auth/oauth_provider.go ExchangeCodeForToken). The Zitadel app
+        # must use auth method "Post" with a generated secret, held in
+        # kite-secrets.sops.yaml.
         - name: zitadel
-          clientId: "CHECKME"
+          clientId: "381530982857113850"
           clientSecret: "${OAUTH_CLIENT_SECRET}"
           issuer: https://auth.cloudlab.kerbaras.com
           scopes: openid,profile,email
