@@ -1,0 +1,18 @@
+# Same NLB story as cluster-a: SNI passthrough on :6443 to the vcluster
+# Service (vcluster terminates its own TLS; its cert carries the extraSAN).
+apiVersion: gateway.networking.k8s.io/v1
+kind: TLSRoute
+metadata:
+  name: scratch-apiserver
+  namespace: scratch
+spec:
+  parentRefs:
+    - name: edge
+      namespace: edge
+      sectionName: controlplanes
+  hostnames:
+    - scratch.k8s.cloudlab.kerbaras.com
+  rules:
+    - backendRefs:
+        - name: scratch
+          port: 443

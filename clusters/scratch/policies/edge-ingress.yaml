@@ -1,0 +1,19 @@
+# Key 2: the edge may reach the vcluster apiserver pod port, nothing else.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-edge-gateway
+spec:
+  endpointSelector:
+    matchLabels:
+      app: vcluster
+      release: scratch
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.pod.namespace: envoy-gateway-system
+            gateway.envoyproxy.io/owning-gateway-name: edge
+      toPorts:
+        - ports:
+            - port: "8443" # the Service maps 443 → 8443
+              protocol: TCP

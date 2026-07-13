@@ -1,0 +1,36 @@
+# scratch: the vCluster lane (ARCHITECTURE.md L3) — EKS-lite at ~500 MB for
+# experiments that don't justify a VM. Real clusters (cluster-a) are for
+# CNI/system experiments; this is for everything else. Embedded SQLite on
+# lvm-thin; workloads sync into this namespace and ride its policies.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: scratch
+  namespace: flux-system
+spec:
+  interval: 30m
+  targetNamespace: scratch
+  releaseName: scratch
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  chart:
+    spec:
+      chart: vcluster
+      version: 0.35.2
+      sourceRef:
+        kind: HelmRepository
+        name: loft-sh
+        namespace: flux-system
+  values:
+    controlPlane:
+      proxy:
+        extraSANs:
+          - scratch.k8s.cloudlab.kerbaras.com # the TLSRoute's SNI name
+    # the exported kubeconfig (secret vc-scratch) speaks the public name;
+    # the tailnet path works too — the Service CIDR is advertised
+    exportKubeConfig:
+      server: https://scratch.k8s.cloudlab.kerbaras.com:6443
