@@ -24,8 +24,9 @@ resources:
   - tailscale-ks.yaml
   - openbao-ks.yaml
   - kite-ks.yaml
-  - cluster-a-ks.yaml
-  - scratch-ks.yaml
+  # workload clusters parked to reclaim RAM — manifests live on in clusters/;
+  # re-add cluster-a-ks.yaml / scratch-ks.yaml to stamp them back out
+  # (prune deleted the VM root disks: re-enabling means a fresh bootstrap)
 patches:
   # the flux-system namespace hosts the webhook HTTPRoute → key 1 of the
   # two-key launch
