@@ -1,6 +1,9 @@
 # Homepage (gethomepage.dev): the cloudlab hub at home.cloudlab.kerbaras.com.
 # Services self-register: any HTTPRoute annotated gethomepage.dev/enabled
 # shows up — adding an app to the dashboard is part of shipping the app.
+# Groups (= columns, ordered in settings.layout): Projects for real apps
+# (personal projects, not harness), Platform, Observability. Theme is
+# Catppuccin Mocha via custom-css.yaml.
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -23,6 +26,16 @@ spec:
     serviceAccount:
       create: true
       name: homepage
+    persistence:
+      homepage-custom-css: # same shape the chart uses for its own config files
+        enabled: true
+        type: custom
+        volumeSpec:
+          configMap:
+            name: homepage-custom-css
+        subPath:
+          - path: custom.css
+            mountPath: /app/config/custom.css
     env:
       - name: HOMEPAGE_ALLOWED_HOSTS
         value: cloudlab.kerbaras.com
@@ -30,10 +43,22 @@ spec:
       kubernetes:
         mode: cluster
         gateway: true
-      settings:
+      # settingsString (not settings): helm's toYaml sorts map keys, and
+      # layout order = column order — Projects must stay first.
+      settingsString: |
         title: cloudlab
+        theme: dark # pinned: custom.css maps the gray palette to Mocha
+        color: gray
         headerStyle: clean
         statusStyle: dot
+        layout:
+          Projects: # personal apps — gethomepage.dev/group: Projects
+            icon: mdi-rocket-launch
+          Platform:
+            icon: mdi-cloud-outline
+          Observability:
+            icon: mdi-telescope
+      services: [] # suppress the chart's "My First Group" sample services
       widgets:
         - search:
             provider: duckduckgo

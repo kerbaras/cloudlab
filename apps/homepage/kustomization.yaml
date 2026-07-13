@@ -3,6 +3,7 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - source.yaml
+  - custom-css.yaml
   - helmrelease.yaml
   - httproute.yaml
   - policies

@@ -1,0 +1,30 @@
+# Catppuccin Mocha (mauve accent) for Homepage. The app has no native
+# Catppuccin palette, so settings.yaml pins `theme: dark` + `color: gray`
+# and this file re-skins the gray palette's CSS variables to Mocha.
+# Palette: https://catppuccin.com/palette — mounted at /app/config/custom.css.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: homepage-custom-css
+  namespace: homepage
+data:
+  custom.css: |
+    .theme-gray {
+      /* Catppuccin Mocha → homepage palette (RGB triplets) */
+      --color-50: 235 239 252 !important;
+      --color-100: 224 230 250 !important;
+      --color-200: 205 214 244 !important; /* text */
+      --color-300: 166 173 200 !important; /* subtext0 */
+      --color-400: 127 132 156 !important; /* overlay1 */
+      --color-500: 108 112 134 !important; /* overlay0 */
+      --color-600: 69 71 90 !important;    /* surface1 */
+      --color-700: 49 50 68 !important;    /* surface0 */
+      --color-800: 30 30 46 !important;    /* base — cards */
+      --color-900: 24 24 37 !important;    /* mantle — page background */
+      --color-logo-start: 203 166 247 !important; /* mauve */
+      --color-logo-stop: 180 190 254 !important;  /* lavender */
+    }
+
+    .theme-gray ::selection {
+      background: rgba(203, 166, 247, 0.35); /* mauve */
+    }
