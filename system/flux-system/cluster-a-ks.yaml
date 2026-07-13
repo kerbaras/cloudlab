@@ -1,6 +1,7 @@
-# cluster-a (Phase 3): the first workload cluster. Provisioning is slow by
-# nature — two ~300 MB factory image imports plus Talos bootstrap — hence
-# the long timeout. wait gates on the CAPI CRs' Ready conditions.
+# cluster-a (Phase 3): the first workload cluster. wait is off on purpose:
+# provisioning takes tens of minutes (image imports + Talos bootstrap) and
+# health-gating the ks on it just blocks every subsequent apply — the CAPI
+# CRs' status is where provisioning progress lives.
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
@@ -9,10 +10,10 @@ metadata:
 spec:
   interval: 10m
   retryInterval: 2m
-  timeout: 30m
+  timeout: 5m
   path: ./clusters/cluster-a
   prune: true
-  wait: true
+  wait: false
   dependsOn:
     - name: capi # the provider quartet
     - name: cdi # DataVolume imports
