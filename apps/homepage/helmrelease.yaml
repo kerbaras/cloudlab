@@ -64,6 +64,8 @@ spec:
         layout:
           Projects: # personal apps — gethomepage.dev/group: Projects
             icon: mdi-rocket-launch
+          Tools: # self-hosted utilities (ntfy, n8n, ...)
+            icon: mdi-tools
           Platform:
             icon: mdi-cloud-outline
           Observability:
