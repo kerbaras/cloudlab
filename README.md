@@ -1,234 +1,207 @@
-# cloudlab
+# CloudLab ☁️
 
-A single Hetzner dedicated server operated as if it were a small cloud
-provider. Design rationale: [`ARCHITECTURE.md`](./ARCHITECTURE.md).
-Addressing contract: [`SUBNET-PLAN.md`](./SUBNET-PLAN.md).
+<p align="center">
+  <strong>A single Hetzner dedicated server, operated as if it were a small cloud provider</strong>
+</p>
 
-This README is the **rollout runbook for Phase 1 — the network baseline**:
-Talos + firewall + Tailscale, Cilium dual-stack, LB pools, the Envoy edge
-Gateway, and the policy tiers.
+<p align="center">
+  <a href="#-features">Features</a> •
+  <a href="#-quick-start">Quick Start</a> •
+  <a href="#-tooling-stack">Tooling Stack</a> •
+  <a href="#-architecture">Architecture</a> •
+  <a href="#-roadmap">Roadmap</a> •
+  <a href="#-contributing">Contributing</a>
+</p>
 
-> [!IMPORTANT]
-> Real values: `cloudlab.kerbaras.com` (domain), `quasar` (host),
-> `cloudlab-mgmt` (cluster). Before applying anything, sweep the repo:
-> `grep -rn CHECKME .`
+<p align="center">
+  <img src="https://img.shields.io/badge/Talos-v1.13-FF7300?logo=talos&logoColor=white" alt="Talos v1.13"/>
+  <img src="https://img.shields.io/badge/Kubernetes-v1.36-326CE5?logo=kubernetes&logoColor=white" alt="Kubernetes v1.36"/>
+  <img src="https://img.shields.io/badge/GitOps-Flux-5468FF?logo=flux&logoColor=white" alt="GitOps: Flux"/>
+  <img src="https://img.shields.io/badge/IPv6-first-9cf.svg" alt="IPv6-first"/>
+  <img src="https://img.shields.io/badge/license-MIT-green.svg" alt="MIT License"/>
+</p>
 
-## Repo layout
-
-```
-├── ARCHITECTURE.md           canonical design record
-├── SUBNET-PLAN.md            addressing contract
-├── talos/                    talconfig · schematic · machineconfig patches
-├── tailscale/                tailnet ACL policy
-├── apps/                     (arrives with the first app) one dir per app
-├── clusters/                 (arrives with cluster-a) CAPI workload clusters
-└── system/                   one dir per component; config + policies colocated
-    ├── flux-system/          gotk manifests · the per-component Kustomization DAG
-    ├── cilium/               bootstrap Helm values (by hand) · LB pools (GitOps)
-    ├── cert-manager/         HelmRelease · ClusterIssuer · Route53 DNS-01 secret
-    ├── envoy-gateway-system/ HelmRelease · GatewayClass · EnvoyProxy · ns policies
-    ├── edge/                 Gateway · wildcard cert · HTTP→S redirect · ns policies
-    └── policies/             reusable baseline components · examples
-```
-
-Each `system/` dir is one Flux Kustomization; dependencies are explicit
-(`edge` depends on `cilium` + `cert-manager` + `envoy-gateway-system`). An
-app follows the same pattern: `apps/<name>/` plus a `<name>-ks.yaml` in
-`system/flux-system/`.
-
-## CHECKME index
-
-| Where | What you must fill in |
-|---|---|
-| `talos/patches/tailscale.yaml` | copied from `.example`; tagged Tailscale auth key |
-| `system/cert-manager/issuer.yaml` | ACME contact email |
-| AWS role ARNs | pinned in manifests (`cloudlab-cert-manager`, `cloudlab-external-dns`, `cloudlab-flux-sops`) — no keys, see decision #17 |
-| DNS zone | `*.cloudlab.kerbaras.com` A → `65.21.143.224`, AAAA → edge address from `fd02::/64` (after Stage 4) |
-
-Already pinned from the live v1 box + tailnet: install disk (by serial), IPv4
-`/26` + gateway `.193`, MagicDNS SAN (`quasar.tail9639db.ts.net`).
+The management cluster **is** the cloud API: VMs, networks, clusters, DNS,
+identity clients, and policies are all CRDs reconciled from Git. The design
+deliberately mirrors AWS concepts — VPC, security groups, NLB, IRSA — rebuilt
+from CNCF primitives on one bare-metal box.
 
 ---
 
-## Stage 0 — Prerequisites (workstation)
+## 🌟 Features
 
-Tools: `talosctl`, `talhelper`, `kubectl`, `helm`, `cilium`, `hubble`,
-`sops`, `aws`.
+- **☁️ Cloud-as-CRDs**: every piece of infrastructure is declarative, in Git, reconciled by a controller — no imperative snowflake state
+- **🌐 IPv6-first**: a routed `/56` is the native addressing plane; every pod holds a globally routable GUA, and reachability is a policy decision, never a NAT accident
+- **🔐 Identity everywhere**: humans, workloads, and clusters authenticate via OIDC — IRSA-at-home federates cluster service accounts into AWS, Zitadel, and OpenBao with **zero static credentials**
+- **🕳️ Tiny public surface**: the internet sees two IPs and three ports; operators see everything, over the tailnet
+- **🛡️ Security groups, distributed**: four enforcement planes (Talos nftables, Cilium eBPF identity policy, LB-IPAM pool selectors, Tailscale ACLs) — no chokepoint router
+- **🔭 Observability behind SSO**: VictoriaMetrics/Logs/Traces + Grafana + Hubble flows, every UI fronted by OIDC at the gateway
+- **♻️ Rebuildable**: the host is cattle — rescue mode to a bare management cluster in ~30 minutes, everything else reconverges from this repo
 
-1. **SOPS/KMS**: the master key is AWS KMS `alias/cloudlab-sops` (us-east-1,
-   ARN pinned in `.sops.yaml` — decision #15). Operators encrypt/decrypt with
-   their own AWS credentials (`eval "$(aws configure export-credentials
-   --profile personal --format env)"` — sops can't read `aws login` root
-   sessions directly); in-cluster decryption is keyless: kustomize-controller
-   assumes the `cloudlab-flux-sops` role via the published cluster OIDC
-   issuer (decision #17). The `decrypt-canary` secret in `system/identity`
-   proves the path on every reconcile.
-2. **Tailscale**: in the admin console apply
-   [`tailscale/policy.hujson`](./tailscale/policy.hujson), then create an
-   auth key **tagged `tag:cloudlab-host`** (reusable off, ephemeral off).
-3. **Secrets**:
-   ```bash
-   cd talos
-   talhelper gensecret > talsecret.sops.yaml && sops -e -i talsecret.sops.yaml
-   cp patches/tailscale.yaml.example patches/tailscale.yaml   # fill TS_AUTHKEY (gitignored)
-   ```
-4. **DNS**: create `*.cloudlab.kerbaras.com. A 65.21.143.224` now; AAAA comes
-   after Stage 4 assigns the v6 edge address.
+<p align="center">
+  <a href="docs/architecture.excalidraw">
+    <img src="docs/architecture.svg" alt="CloudLab layered architecture" width="880"/>
+  </a>
+</p>
 
-## Stage 1 — Metal (Talos via Hetzner rescue)
+---
 
-> [!CAUTION]
-> The `dd` below irreversibly wipes the target disk. Confirm the device in
-> rescue mode with `lsblk` first.
-
-1. Robot → server → **Rescue** tab → activate (linux/x86_64) → reboot → SSH in.
-2. Build the factory image from [`talos/schematic.yaml`](./talos/schematic.yaml):
-   ```bash
-   ID=$(curl -sX POST --data-binary @talos/schematic.yaml https://factory.talos.dev/schematics | jq -r .id)
-   # on the rescue system:
-   wget -O /tmp/talos.raw.xz "https://factory.talos.dev/image/${ID}/v1.13.6/metal-amd64.raw.xz"
-   lsblk -o NAME,SIZE,SERIAL   # system disk = S4GENX0R517398; PV pool = S4GENX0R517494
-   # v1 ran md RAID1 across both disks — kill the superblocks or they haunt Talos:
-   mdadm --stop --scan && wipefs -af /dev/nvme0n1 /dev/nvme1n1
-   xz -dc /tmp/talos.raw.xz | dd of=/dev/disk/by-id/nvme-*S4GENX0R517398 bs=4M status=progress && sync
-   reboot
-   ```
-3. Talos boots into maintenance mode on `65.21.143.251`. Generate and apply:
-   ```bash
-   cd talos
-   talhelper genconfig
-   talosctl apply-config --insecure -n 65.21.143.251 \
-     --file clusterconfig/cloudlab-mgmt-quasar.yaml
-   talosctl --talosconfig clusterconfig/talosconfig -n 65.21.143.251 bootstrap
-   talosctl --talosconfig clusterconfig/talosconfig -n 65.21.143.251 kubeconfig ..
-   ```
-4. Expected state: node `NotReady` (no CNI yet — deliberate), firewall
-   default-block active; the management planes (`:50000`, `:6443`) answer
-   mutual TLS from anywhere (decision #14).
-
-> [!NOTE]
-> **As built:** quasar v2 was installed without rescue mode at all — kexec
-> from the running v1 Debian into the Talos initramfs (RAM-only), then
-> `apply-config`; the installer rewrote the disk. Rescue + `dd` remains the
-> documented recovery path.
-
-## Stage 2 — Join the tailnet (ergonomics, not the floor)
-
-The management floor is decision #14: apid/apiserver are internet-open behind
-mutual TLS, with the operator-managed **Robot firewall** as the IP allowlist
-(restrict `dst 65.21.143.251` + `tcp 50000,6443` there; leave edge and return
-traffic alone). The tailnet is the *preferred* path on top of that floor.
-
-1. The tailscale extension registers `quasar` on the tailnet. With a tagged
-   auth key in `talos/patches/tailscale.yaml` this is automatic; without one
-   (as built) grab the interactive login URL from
-   `talosctl logs ext-tailscale` — take the **latest** URL, the extension
-   regenerates it on its retry loop, and a stale click registers a ghost node.
-2. Approve the advertised route `10.96.0.0/12` in the admin console; run
-   `tailscale set --accept-routes=true` on admin devices.
-3. Verify over the tailnet:
-   ```bash
-   talosctl -e <quasar-tailscale-ip> -n <quasar-tailscale-ip> version
-   kubectl --server https://quasar.<tailnet>.ts.net:6443 get nodes
-   ```
-4. Optionally point `talosconfig`/kubeconfig at the MagicDNS name (it is in
-   the cert SANs via `talos/talconfig.yaml`).
-
-## Stage 3 — Cilium (the one bootstrap-installed layer)
+## 🚀 Quick Start
 
 ```bash
-helm repo add cilium https://helm.cilium.io
-helm install cilium cilium/cilium --version 1.19.5 \
-  -n kube-system -f system/cilium/values.yaml
-cilium status --wait
+# 0. Flash Talos from Hetzner rescue mode (one-time; disk serials pinned in talos/)
+ID=$(curl -sX POST --data-binary @talos/schematic.yaml https://factory.talos.dev/schematics | jq -r .id)
+xz -dc talos.raw.xz | dd of=/dev/disk/by-id/<system-disk> bs=4M && reboot
+
+# 1. Generate machine config and bootstrap the node
+cd talos && talhelper genconfig
+talosctl apply-config --insecure -n 65.21.143.251 --file clusterconfig/cloudlab-mgmt-quasar.yaml
+talosctl bootstrap && talosctl kubeconfig
+
+# 2. Bootstrap the CNI — the one hand-installed layer
+helm install cilium cilium/cilium -n kube-system -f system/cilium/values.yaml
+
+# 3. Hand the box to GitOps — Flux reconciles everything else from this repo
+kubectl apply -k system/flux-system
+flux get kustomizations --watch
 ```
 
-Verify dual-stack before continuing:
+> [!IMPORTANT]
+> Sweep for placeholders before applying anything: `grep -rn CHECKME .`
+> Secrets are SOPS-encrypted against AWS KMS (`alias/cloudlab-sops`) — no keys
+> live in-cluster; Flux decrypts via the published cluster OIDC issuer.
 
-```bash
-kubectl get node quasar -o jsonpath='{.spec.podCIDRs}'   # 10.244/24 + fd01::/64 slice
-kubectl run tmp --rm -it --image=nicolaka/netshoot -- bash
-  ip -6 addr                     # pod holds a GUA from 2a01:4f9:3b:fd01::/64
-  curl -4 ifconfig.co            # egress = 65.21.143.251 (SNAT)
-  curl -6 ifconfig.co            # egress = the pod's own GUA (no NAT)
+## 🧰 Tooling Stack
+
+| Logo | Name | Description |
+|:---:|---|---|
+| <a href="https://www.talos.dev/"><img width="32" src="https://avatars.githubusercontent.com/u/13804887?s=64&v=4"/></a> | Talos Linux | Immutable, API-only Kubernetes OS — no SSH, no shell, declarative firewall |
+| <a href="https://fluxcd.io/"><img width="32" src="https://avatars.githubusercontent.com/u/52158677?s=64&v=4"/></a> | Flux | GitOps root — this repo is the single source of truth |
+| <a href="https://cilium.io/"><img width="32" src="https://avatars.githubusercontent.com/u/21054566?s=64&v=4"/></a> | Cilium | eBPF networking — dual-stack native routing, LB-IPAM, identity policy, Hubble |
+| <a href="https://gateway.envoyproxy.io/"><img width="32" src="https://avatars.githubusercontent.com/u/30125649?s=64&v=4"/></a> | Envoy Gateway | The edge — TLS, OIDC at the gateway, SNI passthrough to workload apiservers |
+| <a href="https://cert-manager.io/"><img width="32" src="https://avatars.githubusercontent.com/u/39950598?s=64&v=4"/></a> | cert-manager | Wildcard certificates via Route53 DNS-01 |
+| <a href="https://kubernetes-sigs.github.io/external-dns/"><img width="32" src="https://avatars.githubusercontent.com/u/36015203?s=64&v=4"/></a> | external-dns | AAAA-first DNS records for the declared surface |
+| <a href="https://tailscale.com/"><img width="32" src="https://avatars.githubusercontent.com/u/48932923?s=64&v=4"/></a> | Tailscale | Admin plane — subnet router advertising the Service CIDR only |
+| <a href="https://zitadel.com/"><img width="32" src="https://avatars.githubusercontent.com/u/70011121?s=64&v=4"/></a> | Zitadel | OIDC IdP — humans → clusters (kubelogin) and apps (SSO by default) |
+| <a href="https://openbao.org/"><img width="32" src="https://avatars.githubusercontent.com/u/152585220?s=64&v=4"/></a> | OpenBao | Secret custody — keyless AWS KMS auto-unseal via pod identity |
+| <a href="https://getsops.io/"><img width="32" src="https://avatars.githubusercontent.com/u/129185620?s=64&v=4"/></a> | SOPS | Secrets encrypted in Git against AWS KMS |
+| <a href="https://kyverno.io/"><img width="32" src="https://avatars.githubusercontent.com/u/68448710?s=64&v=4"/></a> | Kyverno | Policy engine — injects AWS pod identity for IRSA-at-home |
+| <a href="https://openebs.io/"><img width="32" src="https://avatars.githubusercontent.com/u/20769039?s=64&v=4"/></a> | OpenEBS | LocalPV-LVM — thin LVs + CSI snapshots on the NVMe PV pool |
+| <a href="https://cloudnative-pg.io/"><img width="32" src="https://avatars.githubusercontent.com/u/100373852?s=64&v=4"/></a> | CloudNativePG | Postgres operator backing Zitadel & friends |
+| <a href="https://victoriametrics.com/"><img width="32" src="https://avatars.githubusercontent.com/u/43720803?s=64&v=4"/></a> | VictoriaMetrics | Metrics, logs, and traces at ~⅓ the RAM of the Prometheus stack |
+| <a href="https://grafana.com/"><img width="32" src="https://avatars.githubusercontent.com/u/7195757?s=64&v=4"/></a> | Grafana | Dashboards behind SSO; Alloy ships pod logs, events, and OTLP traces |
+| <a href="https://www.terraform.io/"><img width="32" src="https://avatars.githubusercontent.com/u/761456?s=64&v=4"/></a> | Terraform | Record of the AWS footprint — KMS key, IAM OIDC provider, Route53 zone |
+
+**On deck** (Phases 3–4): <a href="https://kubevirt.io/">KubeVirt</a> (EC2 at home — VMs as CRs),
+<a href="https://cluster-api.sigs.k8s.io/">Cluster API</a> (EKS at home — Talos clusters stamped inside VMs),
+<a href="https://www.vcluster.com/">vCluster</a> (EKS-lite at ~500 MB), and
+<a href="https://kro.run/">kro</a> (the platform API — `CloudlabCluster` in one apply).
+
+### The self-hosting backlog
+
+Wishlist, not deployed — earmarked for when the fleet exists to host them:
+
+| Logo | Name | Description |
+|:---:|---|---|
+| <a href="https://forgejo.org/"><img width="32" src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/forgejo.png"/></a> | Forgejo | Self-hosted forge — Gitea's community hard fork; Forgejo Actions speaks GitHub-Actions syntax |
+| <a href="https://woodpecker-ci.org/"><img width="32" src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/woodpecker-ci.png"/></a> | Woodpecker CI | Container-native CI in a single Go binary — or skip it and lean on Forgejo Actions |
+| <a href="https://zotregistry.dev/"><img width="32" src="https://avatars.githubusercontent.com/u/93798821?s=64&v=4"/></a> | zot | OCI-native registry (CNCF) — single binary, no database |
+| <a href="https://github.com/gimlet-io/capacitor"><img width="32" src="https://avatars.githubusercontent.com/u/66959026?s=64&v=4"/></a> | Capacitor | A general-purpose Flux UI; Headlamp + Flux plugin is the kubernetes-sigs route (decision #13's revisit clause) |
+| <a href="https://docs.renovatebot.com/"><img width="32" src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/renovate.png"/></a> | Renovate | Dependency PRs against this repo — HelmRelease pins and images stay fresh |
+| <a href="https://garagehq.deuxfleurs.fr/"><img width="32" src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/garage.png"/></a> | Garage | S3 at home — Rust, geo-distribution optional, far lighter than MinIO |
+| <a href="https://velero.io/"><img width="32" src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/velero.png"/></a> | Velero | The off-box backup path §9 demands before any PV is allowed to matter |
+| <a href="https://ntfy.sh/"><img width="32" src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/ntfy.png"/></a> | ntfy | Pub-sub push notifications — Alertmanager → phone with zero vendor |
+| <a href="https://n8n.io/"><img width="32" src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/n8n.png"/></a> | n8n | Workflow automation and AI-agent glue |
+| <a href="https://www.home-assistant.io/"><img width="32" src="https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/home-assistant.png"/></a> | Home Assistant | The *home* half of the homelab — still unrivaled |
+
+## 🏗️ Architecture
+
+Full design record in [`ARCHITECTURE.md`](./ARCHITECTURE.md); addressing
+contract in [`SUBNET-PLAN.md`](./SUBNET-PLAN.md). The TL;DR:
+
+**The AWS translation table.** EC2 → KubeVirt VMs · EKS → Cluster API +
+Talos-in-VM clusters · VPC → per-cluster `/64` trio · Security Groups → four
+distributed enforcement planes · NLB → Envoy `:6443` SNI passthrough ·
+Route 53 → external-dns · IAM → Zitadel OIDC + SA-issuer federation ·
+Secrets Manager → OpenBao · CloudFormation → kro · CloudWatch → VictoriaMetrics.
+
+**Addressing.** IPv4 is scarce, so it's structural: `.251` answers only
+mutually-authenticated management planes, `.224` lives in a one-address
+LB-IPAM pool only the edge Gateway can claim — no rule review can leak public
+v4, because there is nothing to leak. IPv6 is abundant, so it's declared:
+pods hold GUAs from the routed `/56` (native egress, policy-dark ingress),
+and the only *served* v6 addresses come from an opt-in, Git-reviewed LB pool.
+
+**Security.** There is no chokepoint router. Enforcement is attached to
+identity, not topology: Talos nftables police host-destined traffic, Cilium
+eBPF polices services and pods, Tailscale ACLs police the admin plane.
+East–west is explicit — a namespace gets a `baseline` or `baseline-strict`
+policy tier, and everything else is a written `CiliumNetworkPolicy`.
+
+**GitOps.** One `system/` directory = one component = one Flux Kustomization,
+with explicit `dependsOn` ordering. Cilium's Helm layer is the single
+bootstrap-installed piece; apps follow the same pattern under `apps/`.
+Nineteen recorded decisions (and their revisit conditions) live in the
+[decision log](./ARCHITECTURE.md#11-decision-log).
+
+**Honest non-goals.** One node = one AZ = zero failover. No production SLAs,
+no replicated storage — HA affordances are interfaces today and become
+guarantees only with hardware plurality.
+
+## 📦 Project Structure
+
+```
+cloudlab/
+├── ARCHITECTURE.md          canonical design record — start here
+├── SUBNET-PLAN.md           the addressing contract
+├── talos/                   host config: talconfig · factory schematic · patches
+├── tailscale/               tailnet ACL policy
+├── aws/                     Terraform: KMS key · IAM OIDC provider · Route53 zone
+├── system/                  one dir = one component = one Flux Kustomization
+│   ├── flux-system/         GitOps root + the Kustomization dependency DAG
+│   ├── cilium/              bootstrap Helm values · LB-IPAM pools
+│   ├── edge/                Gateway · wildcard cert · HTTP→S redirect
+│   ├── identity/            OIDC publication · AWS pod identity (IRSA-at-home)
+│   ├── monitoring/          VictoriaMetrics stack · Alloy · SSO'd UIs
+│   ├── policies/            reusable network-policy baselines + examples
+│   └── ...                  cert-manager · envoy-gateway-system · external-dns
+│                            kyverno · openebs · cloudnative-pg · tailscale
+├── apps/                    one dir per app + a ks in system/flux-system
+│   ├── zitadel/             the IdP (on a CNPG database)
+│   ├── openbao/             secret custody
+│   ├── homepage/            the hub — routes self-register via annotations
+│   └── kite/                cluster console
+└── docs/                    the layer diagram (.excalidraw source + rendered svg)
 ```
 
-Note: Cilium starts in `policy-audit-mode` — policies observe, not enforce,
-until Stage 5 flips the switch.
+Each `system/` directory is everything one component needs — HelmRelease,
+config CRs, its namespace's Cilium policies — and maps to exactly one Flux
+Kustomization. Secrets are SOPS-encrypted in place; nothing sensitive lives
+in the repo in plaintext.
 
-## Stage 4 — GitOps root + edge
+## 🗺️ Roadmap
 
-1. Install the Flux controllers and hand them the repo (public, read-only —
-   no repo credentials live in-cluster):
-   ```bash
-   kubectl apply -k system/flux-system
-   ```
-2. **Cold-rebuild break-glass only**: steady-state SOPS decryption is
-   keyless (kustomize-controller → web identity → KMS), but on a from-scratch
-   rebuild the OIDC issuer isn't public until the edge is up — a circle.
-   Bridge it by handing kustomize-controller your operator credentials for
-   one convergence pass, then let GitOps remove them:
-   ```bash
-   eval "$(aws configure export-credentials --profile personal --format env)"
-   kubectl -n flux-system set env deploy/kustomize-controller \
-     AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" AWS_SESSION_TOKEN="$AWS_SESSION_TOKEN"
-   # once the edge + oidc mirror are Ready, flux reconcile kustomization flux-system
-   # re-applies the web-identity-only pod spec and the env vars vanish.
-   ```
-   Storage is the other one-time bootstrap: `dm_thin_pool` loads via
-   `talos/patches/storage.yaml`, and the VG is created once from a
-   privileged pod — `pvcreate`/`vgcreate pvpool` on the by-id path of disk
-   `S4GENX0R517494` (see `system/openebs/helmrelease.yaml` header).
-3. Reconciliation follows the dependency DAG: `cilium` (LB pools),
-   `cert-manager`, and `envoy-gateway-system` land in parallel, then `edge`
-   (Gateway, wildcard cert, redirect). Watch with
-   `flux get kustomizations --watch`. On a from-scratch install expect one
-   transient round of "CRD not found" retries while the HelmReleases install
-   the CRDs their neighbors consume — it converges within `retryInterval`.
-4. Watch the edge come up, then publish the AAAA record:
-   ```bash
-   kubectl -n envoy-gateway-system get svc   # EXTERNAL-IP: 65.21.143.224 + fd02::…
-   kubectl -n edge get gateway edge          # PROGRAMMED: True
-   kubectl -n edge get certificate           # READY: True (DNS-01 takes a few minutes)
-   ```
+- ✅ **Phase 1 — network baseline**: Talos + firewall + Tailscale, Cilium dual-stack, LB pools, Envoy edge, policy tiers
+- 🚧 **Phase 4 — identity & platform** (started early): Zitadel + structured authn, gateway OIDC, IRSA-at-home, OpenBao; kro still ahead
+- 📅 **Phase 2 — hardening**: Hetzner virtual MAC + Multus, Tailscale operator, VyOS-as-VM for routed tenant bridges
+- 📅 **Phase 3 — the fleet**: KubeVirt + CDI, CAPI-stamped Talos clusters on their `/64` trios, vCluster lane
+- 📅 **Phase N — box #2**: ClusterMesh, replicated storage, HA stops being theater
 
-## Stage 5 — Verification suite (Phase 1 exit criteria)
+## 🤝 Contributing
 
-**From the internet** (any host that is not on the tailnet):
+This is a lab — one box, one operator — but issues, ideas, and PRs are
+welcome. Ground rules:
 
-| Check | Expectation |
-|---|---|
-| `nmap -sS -p- 65.21.143.251` | only `50000` + `6443` open (both TLS-authenticated); rest filtered |
-| `nmap -sU -p 41641 65.21.143.251` | open\|filtered (Tailscale) |
-| `nmap -sS -p- 65.21.143.224` | exactly 80, 443, 6443 open |
-| `curl -I http://anything.cloudlab.kerbaras.com` | `301` → https |
-| `curl -v https://anything.cloudlab.kerbaras.com` | valid `*.cloudlab.kerbaras.com` cert (404 body is fine — nothing is routed yet) |
-| `curl -6 -I https://anything.cloudlab.kerbaras.com` | same, over the AAAA |
-| `ping6 <any pod GUA from fd01::/64>` | silence; Hubble logs `world → pod DROP` |
+1. **Argue with the decision log.** Every choice in
+   [ARCHITECTURE.md §11](./ARCHITECTURE.md#11-decision-log) has a *because*
+   and a *revisit when*; the best proposals engage one of those instead of
+   relitigating from scratch.
+2. **Follow the shape.** One directory = one component = one Flux
+   Kustomization, with explicit `dependsOn` — no loose manifests.
+3. **No plaintext secrets.** Anything sensitive is SOPS-encrypted against
+   the KMS key; `grep -rn CHECKME .` before assuming a value is real.
+4. **Standard flow.** Fork → feature branch → PR with a clear "why".
 
-**From the tailnet:**
+## 📄 License
 
-| Check | Expectation |
-|---|---|
-| `talosctl -n quasar version` / `kubectl get nodes` | works over MagicDNS |
-| `curl <any ClusterIP>` from your laptop | works (advertised Service CIDR) |
-| Tailscale admin console | `quasar` has no ACL grant toward other devices |
-
-**Policy audit → enforce:** run for a few days, watching
-`hubble observe --verdict AUDIT` for legitimate flows you forgot to allow.
-Then set `policy-audit-mode: "false"` in
-[`system/cilium/values.yaml`](./system/cilium/values.yaml),
-`helm upgrade`, and re-run the external checks.
-
-Phase 1 is done when every row above passes. Next: Phase 2/3 per
-[`ARCHITECTURE.md`](./ARCHITECTURE.md) §12.
-
-## Recovery
-
-- **Bricked host / lost config** → Stage 1 again (rescue + `dd` + `talhelper
-  genconfig` + bootstrap): ~30 minutes to a bare mgmt cluster.
-- **etcd** → `talosctl etcd snapshot db.snapshot` periodically, shipped
-  off-box; everything else reconstructs from this repo.
-- **Locked out** → IP-allowlist mistakes live in the Robot firewall and are
-  fixed from any browser; only a broken Talos firewall config costs a
-  rescue-mode reinstall.
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
