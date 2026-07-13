@@ -8,6 +8,7 @@ resources:
   - cilium-ks.yaml
   - multus-ks.yaml
   - kubevirt-ks.yaml
+  - cdi-ks.yaml
   - cert-manager-ks.yaml
   - envoy-gateway-system-ks.yaml
   - edge-ks.yaml

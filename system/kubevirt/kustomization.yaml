@@ -4,3 +4,14 @@ resources:
   - operator.yaml
   - kubevirt.yaml
   - policies
+patches:
+  # single node — one virt-operator is plenty (infra replicas are handled by
+  # spec.infra.replicas in kubevirt.yaml; the operator itself is not)
+  - patch: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: virt-operator
+        namespace: kubevirt
+      spec:
+        replicas: 1

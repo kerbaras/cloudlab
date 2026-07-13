@@ -1,0 +1,22 @@
+# CDI: VM disk-image imports (the AMI intake). Same first-install retry
+# story as cert-manager — the CDI CR and StorageProfile need CRDs the
+# operator registers at runtime.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: cdi
+  namespace: flux-system
+spec:
+  interval: 10m
+  retryInterval: 2m
+  timeout: 10m
+  path: ./system/cdi
+  prune: true
+  wait: true
+  dependsOn:
+    - name: openebs # scratch + imported PVCs live on lvm-thin
+  decryption:
+    provider: sops # KMS via kustomize-controller's web identity (no secretRef)
+  sourceRef:
+    kind: GitRepository
+    name: flux-system

@@ -1,0 +1,29 @@
+# CDI (ARCHITECTURE.md L1, Phase 3): image imports to PVCs — the AMI intake.
+# Upstream CR trimmed to what this cluster needs; scratch space lands on
+# lvm-thin like everything else (§9).
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: CDI
+metadata:
+  name: cdi
+spec:
+  config:
+    featureGates:
+      - HonorWaitForFirstConsumer # lvm-thin binds WaitForFirstConsumer; don't force-bind scratch
+      - WebhookPvcRendering
+    scratchSpaceStorageClass: lvm-thin
+  imagePullPolicy: IfNotPresent
+---
+# lvm-localpv is not in CDI's known-provisioner table, so its StorageProfile
+# comes up empty and DataVolumes without explicit accessModes/volumeMode are
+# rejected. Declare the truth: RWO, Filesystem. (CDI owns the object's
+# status; spec is user-intent by design. First install: exists once the CDI
+# CR deploys — retryInterval converges.)
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: StorageProfile
+metadata:
+  name: lvm-thin
+spec:
+  claimPropertySets:
+    - accessModes:
+        - ReadWriteOnce
+      volumeMode: Filesystem
