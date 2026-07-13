@@ -3,7 +3,7 @@
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
 kind: KubevirtMachineTemplate
 metadata:
-  name: cluster-a-workers
+  name: cluster-a-workers-r2 # immutable — bump the suffix to change
   namespace: cluster-a
 spec:
   template:
@@ -40,10 +40,21 @@ spec:
                 devices:
                   networkInterfaceMultiqueue: true
                   rng: {}
+                  # masquerade, explicitly: capk defaults to bridge binding on
+                  # the pod network, and VM frames with a foreign MAC die at
+                  # Cilium's veth — no DNS, no apid, no cluster (observed on
+                  # the serial console). Masquerade NATs everything through
+                  # the pod IP and is CNI-agnostic.
+                  interfaces:
+                    - name: default
+                      masquerade: {}
                   disks:
                     - name: boot
                       disk:
                         bus: virtio
+              networks:
+                - name: default
+                  pod: {}
               volumes:
                 - name: boot
                   dataVolume:
@@ -98,5 +109,5 @@ spec:
       infrastructureRef:
         apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
         kind: KubevirtMachineTemplate
-        name: cluster-a-workers
+        name: cluster-a-workers-r2
         namespace: cluster-a
