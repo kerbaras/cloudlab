@@ -44,10 +44,11 @@ spec:
         namespace: cabpt-system
         version: v0.6.12
         fetchConfig:
-          url: https://github.com/siderolabs/cluster-api-bootstrap-provider-talos/releases
+          # clusterctl-style provider URL — the path shape matters, spec.version picks the tag
+          url: https://github.com/siderolabs/cluster-api-bootstrap-provider-talos/releases/latest/bootstrap-components.yaml
     controlPlane:
       talos:
         namespace: cacppt-system
         version: v0.5.13
         fetchConfig:
-          url: https://github.com/siderolabs/cluster-api-control-plane-provider-talos/releases
+          url: https://github.com/siderolabs/cluster-api-control-plane-provider-talos/releases/latest/control-plane-components.yaml
