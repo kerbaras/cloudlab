@@ -47,6 +47,7 @@ spec:
       # layout order = column order — Projects must stay first.
       settingsString: |
         title: cloudlab
+        favicon: https://raw.githubusercontent.com/kerbaras/cloudlab/main/docs/logo.png
         theme: dark # pinned: custom.css maps the gray palette to Mocha
         color: gray
         headerStyle: clean
@@ -60,6 +61,12 @@ spec:
             icon: mdi-telescope
       services: [] # suppress the chart's "My First Group" sample services
       widgets:
+        # "[logo] CloudLab" header, top-left
+        - logo:
+            icon: https://raw.githubusercontent.com/kerbaras/cloudlab/main/docs/logo.png
+        - greeting:
+            text_size: xl
+            text: CloudLab
         # node gauges: /proc in a pod is node-wide on Talos, so cpu/memory
         # are quasar's; disk / is the overlay upperdir → the /var partition
         - resources:
@@ -72,11 +79,6 @@ spec:
         - search:
             provider: duckduckgo
             target: _blank
-        - datetime:
-            text_size: xl
-            format:
-              timeStyle: short
-              dateStyle: long
       bookmarks:
         - Operate:
             - Repo:
