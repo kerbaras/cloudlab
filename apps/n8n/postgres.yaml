@@ -1,0 +1,24 @@
+# n8n's database: CNPG Cluster on lvm-thin (same shape as zitadel-db).
+# CNPG auto-generates the app user secret (n8n-db-app); the helm values
+# consume only the password key — host/db/user are deterministic.
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: n8n-db
+  namespace: n8n
+spec:
+  instances: 1
+  # starting point (mirrors zitadel-db); right-size from observed usage later
+  resources:
+    requests:
+      cpu: 10m
+      memory: 160Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+  bootstrap:
+    initdb:
+      database: n8n
+      owner: n8n
+  storage:
+    size: 10Gi

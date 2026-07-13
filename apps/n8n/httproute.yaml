@@ -1,0 +1,26 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: n8n
+  namespace: n8n
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: n8n
+    gethomepage.dev/group: Tools
+    gethomepage.dev/icon: n8n.png
+    gethomepage.dev/description: Workflow automation
+    gethomepage.dev/href: https://n8n.cloudlab.kerbaras.com
+spec:
+  parentRefs:
+    - name: edge
+      namespace: edge
+      sectionName: https
+  hostnames:
+    - n8n.cloudlab.kerbaras.com
+  rules:
+    - backendRefs:
+        - name: n8n
+          port: 80
+      # the editor push connection is SSE — it must outlive Envoy's 15s default
+      timeouts:
+        request: 0s

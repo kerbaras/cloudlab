@@ -1,0 +1,20 @@
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: n8n
+  namespace: flux-system
+spec:
+  interval: 10m
+  retryInterval: 2m
+  path: ./apps/n8n
+  prune: true
+  wait: true
+  dependsOn:
+    - name: cloudnative-pg # Cluster CRD + operator
+    - name: openebs # binary-data PVC on lvm-thin
+    - name: edge
+  decryption:
+    provider: sops # KMS via kustomize-controller's web identity (no secretRef)
+  sourceRef:
+    kind: GitRepository
+    name: flux-system

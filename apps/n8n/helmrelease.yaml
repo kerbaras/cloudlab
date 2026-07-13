@@ -1,0 +1,75 @@
+# n8n: workflow automation at n8n.cloudlab.kerbaras.com. Single main pod
+# (no queue mode — workers/valkey stay off on a RAM-bound box); postgres via
+# CNPG; the credential-store encryption key is pinned from sops so workflows
+# survive pod and PVC churn. Owner account is created on first visit; SSO is
+# an enterprise feature, so local auth it is.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: n8n
+  namespace: flux-system
+spec:
+  interval: 30m
+  targetNamespace: n8n
+  releaseName: n8n # service must be "n8n"
+  install:
+    remediation:
+      retries: 3 # first install races the CNPG cluster coming up
+  upgrade:
+    remediation:
+      retries: 3
+  chart:
+    spec:
+      chart: n8n
+      version: 2.0.1
+      sourceRef:
+        kind: HelmRepository
+        name: 8gears
+        namespace: flux-system
+  values:
+    main:
+      # explicit env names beat the chart's config→ENV name mangling
+      extraEnv:
+        N8N_HOST:
+          value: n8n.cloudlab.kerbaras.com
+        N8N_PROTOCOL:
+          value: https # URL generation only; TLS still terminates at the edge
+        WEBHOOK_URL:
+          value: https://n8n.cloudlab.kerbaras.com/
+        N8N_PROXY_HOPS:
+          value: "1" # trust X-Forwarded-* from the edge Envoy
+        GENERIC_TIMEZONE:
+          value: America/Montevideo
+        DB_TYPE:
+          value: postgresdb
+        DB_POSTGRESDB_HOST:
+          value: n8n-db-rw
+        DB_POSTGRESDB_PORT:
+          value: "5432"
+        DB_POSTGRESDB_DATABASE:
+          value: n8n
+        DB_POSTGRESDB_USER:
+          value: n8n
+        DB_POSTGRESDB_PASSWORD:
+          valueFrom:
+            secretKeyRef:
+              name: n8n-db-app
+              key: password
+        N8N_ENCRYPTION_KEY:
+          valueFrom:
+            secretKeyRef:
+              name: n8n-secrets
+              key: encryption-key
+      # binary data / local state; DB carries workflows+credentials
+      persistence:
+        enabled: true
+        type: dynamic
+        size: 2Gi
+      # starting point; right-size from observed usage later
+      resources:
+        requests:
+          cpu: 50m
+          memory: 320Mi
+        limits:
+          cpu: "1"
+          memory: 768Mi
