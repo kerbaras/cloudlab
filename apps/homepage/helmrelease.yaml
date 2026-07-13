@@ -61,10 +61,7 @@ spec:
             icon: mdi-telescope
       services: [] # suppress the chart's "My First Group" sample services
       widgets:
-        # "[logo] CloudLab" header, top-left
-        - logo:
-            icon: https://raw.githubusercontent.com/kerbaras/cloudlab/main/docs/logo.png
-        - greeting:
+        - greeting: # header, top-left (favicon still carries the logo)
             text_size: xl
             text: CloudLab
         # node gauges: /proc in a pod is node-wide on Talos, so cpu/memory
