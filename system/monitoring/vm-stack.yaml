@@ -34,6 +34,34 @@ spec:
           resources:
             requests:
               storage: 20Gi
+    # KubeVirt's node-labeller stamps ~280 cpu-feature/cpu-model labels on the
+    # node, and the chart's default labelmap copies every node label onto every
+    # kubelet/cadvisor series — blowing past vmsingle's maxLabelsPerTimeseries,
+    # which then drops all kubelet samples on the floor
+    # (vm_rows_ignored_total{reason="too_many_labels"}). Attach only node identity.
+    kubelet:
+      vmScrape:
+        spec:
+          relabelConfigs:
+            - sourceLabels: [__meta_kubernetes_node_name]
+              targetLabel: node
+            - sourceLabels: [__metrics_path__]
+              targetLabel: metrics_path
+            - targetLabel: job
+              replacement: kubelet
+    # A single fat node's apiserver /metrics exceeds vmagent's 16MiB default
+    # response cap, killing the whole target — raise the ceiling for this one.
+    kubeApiServer:
+      vmScrape:
+        spec:
+          endpoints:
+            - bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+              port: https
+              scheme: https
+              maxScrapeSize: 64MB
+              tlsConfig:
+                caFile: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+                serverName: kubernetes
     # Talos runs no kube-proxy (Cilium KPR) and its control-plane components
     # bind localhost — those scrape targets would only produce dead alerts.
     kubeProxy:
