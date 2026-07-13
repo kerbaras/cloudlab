@@ -1,0 +1,100 @@
+# ntfy: push notifications for the lab (CI results, alerts, automations).
+# No helm chart upstream worth adopting — a single binary gets raw manifests.
+# Private instance: auth-default-access deny-all, the admin user is
+# provisioned declaratively via NTFY_AUTH_USERS (bcrypt hash in sops).
+# cache/auth/attachments all live on one lvm-thin PVC.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ntfy-data
+  namespace: ntfy
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ntfy
+  namespace: ntfy
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate # RWO PVC
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ntfy
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ntfy
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: ntfy
+          image: binwiederhier/ntfy:v2.25.0
+          args: ["serve"]
+          env:
+            - name: NTFY_BASE_URL
+              value: https://ntfy.cloudlab.kerbaras.com
+            - name: NTFY_LISTEN_HTTP
+              value: ":8080" # unprivileged port, rootless container
+            - name: NTFY_BEHIND_PROXY
+              value: "true"
+            - name: NTFY_CACHE_FILE
+              value: /var/lib/ntfy/cache.db
+            - name: NTFY_AUTH_FILE
+              value: /var/lib/ntfy/auth.db
+            - name: NTFY_AUTH_DEFAULT_ACCESS
+              value: deny-all # private instance; grants are per-user/topic
+            - name: NTFY_ENABLE_LOGIN
+              value: "true"
+            - name: NTFY_ATTACHMENT_CACHE_DIR
+              value: /var/lib/ntfy/attachments
+            # provisioned admin — bcrypt hash, so it rides the sops secret
+            - name: NTFY_AUTH_USERS
+              valueFrom:
+                secretKeyRef:
+                  name: ntfy-users
+                  key: auth-users
+          ports:
+            - name: http
+              containerPort: 8080
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/ntfy
+          readinessProbe:
+            httpGet: { path: /v1/health, port: http }
+          livenessProbe:
+            httpGet: { path: /v1/health, port: http }
+          # starting point; right-size from observed usage later
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: ntfy-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ntfy
+  namespace: ntfy
+spec:
+  selector:
+    app.kubernetes.io/name: ntfy
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

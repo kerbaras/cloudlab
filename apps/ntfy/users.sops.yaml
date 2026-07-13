@@ -1,0 +1,20 @@
+# Provisioned ntfy users (user:bcrypt-hash:role, comma-separated). The admin
+# role bypasses per-topic ACLs; add plain users + NTFY_AUTH_ACCESS grants as
+# integrations appear.
+apiVersion: v1
+kind: Secret
+metadata:
+    name: ntfy-users
+    namespace: ntfy
+stringData:
+    auth-users: ENC[AES256_GCM,data:yRHzeobWHhosXZchbLXYubUuphbMGQpH+ErJJxignf5RnLBuFBZRBbTbEyX2oY0t2+PkzGtIdRExji+q8Ln89bTbNzHCuDyt,iv:AGB63bjRG5NBEEuuEOTM2q4uxHUaGQg1Mi+eA78StSo=,tag:ZDj+p86ro3IkUywH526G0Q==,type:str]
+sops:
+    kms:
+        - arn: arn:aws:kms:us-east-1:203447569320:key/99cadca6-ba46-4ef0-9df2-9f2678b7962e
+          created_at: "2026-07-13T20:47:17Z"
+          enc: AQICAHghjr0dewq1sbS0xUAI2yzWINRSDNS1+gWClJ5Dzg9INgH+iiskRQJPvGUbXwIzRtwhAAAAfjB8BgkqhkiG9w0BBwagbzBtAgEAMGgGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQM2FyHygvpTRShtGSQAgEQgDsKJmEom14oiD+uHrB6khCC88ae9/veZtQOlrd7NNE8jaMj6MuWf0CLipu+s1vG3CdSIVRAJd2PTQGjiQ==
+          aws_profile: ""
+    lastmodified: "2026-07-13T20:47:18Z"
+    mac: ENC[AES256_GCM,data:kQde/McPpyiHg7KfiX5glJK/G3cOzme8Svx9Hr8DEEKLgxIdd476/bbyBo5Pwa18r+VMqF4BNHS/+KQhwdLDMzFiKtfypzeaZXIFLNMjC9pp5i/AN6ZQ8Z8TXv2EQqeyVH0jjQVhUw7IkhXxsNI1fqWktR+bCjG51tdHFORrUes=,iv:PPjMYZZqdGo/0sqv8Ad3YLz5RCT8eoOpsIrqnS2rZEY=,tag:qoBUC3G2aVE0KKwMfGuYJg==,type:str]
+    encrypted_regex: ^(data|stringData)$
+    version: 3.11.0
