@@ -36,16 +36,8 @@ kind: HTTPRoute
 metadata:
   name: victorialogs
   namespace: monitoring
-  annotations:
-    gethomepage.dev/enabled: "true"
-    gethomepage.dev/name: VictoriaLogs
-    gethomepage.dev/group: Observability
-    gethomepage.dev/icon: victoriametrics.png
-    gethomepage.dev/description: Native logs UI (Zitadel SSO)
-    gethomepage.dev/href: https://logs.cloudlab.kerbaras.com/select/vmui/
-    # status: homepage defaults to app.kubernetes.io/name=<route name>,
-    # but the operator labels the pods victoria-logs-single
-    gethomepage.dev/pod-selector: app.kubernetes.io/name=victoria-logs-single
+  # not on the dashboard (Grafana's Logs Drilldown is the daily door;
+  # this stays reachable directly at logs.cloudlab.kerbaras.com)
 spec:
   parentRefs:
     - name: edge
