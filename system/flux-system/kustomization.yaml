@@ -9,6 +9,7 @@ resources:
   - multus-ks.yaml
   - kubevirt-ks.yaml
   - cdi-ks.yaml
+  - capi-ks.yaml
   - cert-manager-ks.yaml
   - envoy-gateway-system-ks.yaml
   - edge-ks.yaml

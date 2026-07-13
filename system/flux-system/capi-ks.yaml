@@ -1,0 +1,23 @@
+# Cluster API operator + providers. Depends on cert-manager (operator
+# webhook certs) and kubevirt (capk manages VirtualMachine CRs). Providers
+# fetch their components from GitHub releases at reconcile time.
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: capi
+  namespace: flux-system
+spec:
+  interval: 10m
+  retryInterval: 2m
+  timeout: 10m
+  path: ./system/capi
+  prune: true
+  wait: true
+  dependsOn:
+    - name: cert-manager
+    - name: kubevirt
+  decryption:
+    provider: sops # KMS via kustomize-controller's web identity (no secretRef)
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
