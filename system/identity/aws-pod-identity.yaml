@@ -8,6 +8,13 @@ apiVersion: kyverno.io/v1
 kind: ClusterPolicy
 metadata:
   name: aws-pod-identity
+  annotations:
+    # No autogen: the extended Deployment/DaemonSet rules race their own
+    # ServiceAccount at apply time (APICall 404 → fail-closed deny — bit
+    # kubevirt's virt-operator). Pod CREATE is the only admission where the
+    # SA provably exists (built-in SA admission runs first), and it's the
+    # only place the injection is needed.
+    pod-policies.kyverno.io/autogen-controllers: none
 spec:
   rules:
     - name: inject-web-identity
