@@ -1,6 +1,12 @@
 # Cluster API operator (ARCHITECTURE.md L3): the EKS control-plane-of-
-# control-planes. Providers are CRs (providers.yaml), not helm values —
-# cloud-as-CRDs applies to the cloud machinery itself.
+# control-planes. Providers ride the chart values rather than standalone CRs:
+# their CRDs come from this very release, and a colocated CR deadlocks the
+# ks stage dry-run (same lesson as system/cdi's StorageProfile). The chart
+# renders the same Provider CRs — Git stays the source of truth.
+#
+# The quartet is pinned on the v1beta1 contract — CACPPT has no v1beta2
+# release yet (its PR #244 is the revisit trigger; CABPT's v0.7 alphas don't
+# help alone). Core v1.12.x is the last minor all three providers speak.
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -24,3 +30,24 @@ spec:
         kind: HelmRepository
         name: capi-operator
         namespace: flux-system
+  values:
+    core:
+      cluster-api:
+        namespace: capi-system
+        version: v1.12.9
+    infrastructure:
+      kubevirt:
+        namespace: capk-system
+        version: v0.11.2
+    bootstrap:
+      talos:
+        namespace: cabpt-system
+        version: v0.6.12
+        fetchConfig:
+          url: https://github.com/siderolabs/cluster-api-bootstrap-provider-talos/releases
+    controlPlane:
+      talos:
+        namespace: cacppt-system
+        version: v0.5.13
+        fetchConfig:
+          url: https://github.com/siderolabs/cluster-api-control-plane-provider-talos/releases
