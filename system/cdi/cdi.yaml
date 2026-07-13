@@ -12,18 +12,9 @@ spec:
       - WebhookPvcRendering
     scratchSpaceStorageClass: lvm-thin
   imagePullPolicy: IfNotPresent
----
-# lvm-localpv is not in CDI's known-provisioner table, so its StorageProfile
-# comes up empty and DataVolumes without explicit accessModes/volumeMode are
-# rejected. Declare the truth: RWO, Filesystem. (CDI owns the object's
-# status; spec is user-intent by design. First install: exists once the CDI
-# CR deploys — retryInterval converges.)
-apiVersion: cdi.kubevirt.io/v1beta1
-kind: StorageProfile
-metadata:
-  name: lvm-thin
-spec:
-  claimPropertySets:
-    - accessModes:
-        - ReadWriteOnce
-      volumeMode: Filesystem
+# Convention, not config: lvm-localpv is unknown to CDI's provisioner table,
+# so the lvm-thin StorageProfile is empty and can't fill in PVC blanks.
+# A declared StorageProfile can't live here either — its CRD is registered
+# by the operator this ks applies, and the stage dry-run deadlocks on the
+# missing kind. So DataVolumes spell it out instead: pvc.accessModes
+# [ReadWriteOnce] + volumeMode Filesystem, always (see clusters/).
