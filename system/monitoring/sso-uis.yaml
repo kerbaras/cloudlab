@@ -13,6 +13,11 @@ metadata:
     gethomepage.dev/icon: cilium.png
     gethomepage.dev/description: Network flows (Zitadel SSO)
     gethomepage.dev/href: https://hubble.cloudlab.kerbaras.com
+    # status: homepage's pod check can't cross namespaces (pods live in
+    # kube-system, route lives here) — external hides the k8s dot, and the
+    # probe goes cluster-internal, never through the OIDC gate
+    gethomepage.dev/external: "true"
+    gethomepage.dev/siteMonitor: http://hubble-ui.kube-system.svc.cluster.local:80
 spec:
   parentRefs:
     - name: edge
@@ -38,6 +43,9 @@ metadata:
     gethomepage.dev/icon: victoriametrics.png
     gethomepage.dev/description: Native logs UI (Zitadel SSO)
     gethomepage.dev/href: https://logs.cloudlab.kerbaras.com/select/vmui/
+    # status: homepage defaults to app.kubernetes.io/name=<route name>,
+    # but the operator labels the pods victoria-logs-single
+    gethomepage.dev/pod-selector: app.kubernetes.io/name=victoria-logs-single
 spec:
   parentRefs:
     - name: edge
@@ -62,6 +70,8 @@ metadata:
     gethomepage.dev/icon: alertmanager.png
     gethomepage.dev/description: Alert silencing (Zitadel SSO)
     gethomepage.dev/href: https://alerts.cloudlab.kerbaras.com
+    # status: pods carry app.kubernetes.io/name=vmalertmanager, not the route name
+    gethomepage.dev/pod-selector: app.kubernetes.io/name=vmalertmanager
 spec:
   parentRefs:
     - name: edge
