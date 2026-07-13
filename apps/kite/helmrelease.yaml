@@ -28,6 +28,10 @@ spec:
         name: kite
         namespace: flux-system
   values:
+    # sqlite rides an RWO PVC — RollingUpdate deadlocks on the mount
+    # (old pod holds the volume, new pod waits forever)
+    deploymentStrategy:
+      type: Recreate
     resources:
       requests:
         cpu: 50m
