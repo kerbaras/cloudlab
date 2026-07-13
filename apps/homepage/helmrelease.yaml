@@ -60,6 +60,15 @@ spec:
             icon: mdi-telescope
       services: [] # suppress the chart's "My First Group" sample services
       widgets:
+        # node gauges: /proc in a pod is node-wide on Talos, so cpu/memory
+        # are quasar's; disk / is the overlay upperdir → the /var partition
+        - resources:
+            label: quasar
+            expanded: true
+            cpu: true
+            memory: true
+            disk: /
+            refresh: 5000
         - search:
             provider: duckduckgo
             target: _blank
