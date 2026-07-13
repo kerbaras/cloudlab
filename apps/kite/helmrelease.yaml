@@ -32,12 +32,14 @@ spec:
     # (old pod holds the volume, new pod waits forever)
     deploymentStrategy:
       type: Recreate
+    # right-sized from observed usage (mean ~92Mi, spikes to ~194Mi)
     resources:
       requests:
-        cpu: 50m
-        memory: 128Mi
+        cpu: 10m
+        memory: 96Mi
       limits:
-        memory: 384Mi
+        cpu: 200m
+        memory: 256Mi
     db:
       type: sqlite
       sqlite:

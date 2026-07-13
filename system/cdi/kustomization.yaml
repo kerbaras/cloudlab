@@ -3,4 +3,5 @@ kind: Kustomization
 resources:
   - operator.yaml
   - cdi.yaml
+  - rightsize.yaml
   - policies

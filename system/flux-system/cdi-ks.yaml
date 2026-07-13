@@ -15,6 +15,7 @@ spec:
   wait: true
   dependsOn:
     - name: openebs # scratch + imported PVCs live on lvm-thin
+    - name: kyverno # rightsize.yaml is a ClusterPolicy (pod-admission sizing)
   decryption:
     provider: sops # KMS via kustomize-controller's web identity (no secretRef)
   sourceRef:

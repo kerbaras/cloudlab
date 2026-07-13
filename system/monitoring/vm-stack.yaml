@@ -26,9 +26,19 @@ spec:
         name: victoriametrics
         namespace: flux-system
   values:
+    # Requests/limits below are right-sized from observed usage (request ≈
+    # steady-state mean, limit ≈ mean+3σ with startup headroom) — this is a
+    # lab, the budget belongs to workload clusters, not the plumbing.
     vmsingle:
       spec:
         retentionPeriod: "30d"
+        resources:
+          requests:
+            cpu: 100m
+            memory: 640Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
         storage:
           accessModes: [ReadWriteOnce]
           resources:
@@ -56,6 +66,55 @@ spec:
       spec:
         extraArgs:
           promscrape.maxScrapeSize: "64MB"
+        resources:
+          requests:
+            cpu: 25m
+            memory: 128Mi
+          limits:
+            cpu: 200m
+            memory: 384Mi
+    vmalert:
+      spec:
+        resources:
+          requests:
+            cpu: 10m
+            memory: 64Mi
+          limits:
+            cpu: 100m
+            memory: 128Mi
+    alertmanager:
+      spec:
+        resources:
+          requests:
+            cpu: 5m
+            memory: 48Mi
+          limits:
+            cpu: 100m
+            memory: 96Mi
+    victoria-metrics-operator:
+      resources:
+        requests:
+          cpu: 10m
+          memory: 112Mi
+        limits:
+          cpu: 100m
+          memory: 192Mi
+    kube-state-metrics:
+      resources:
+        requests:
+          cpu: 5m
+          memory: 80Mi
+        limits:
+          cpu: 50m
+          memory: 128Mi
+    prometheus-node-exporter:
+      resources:
+        requests:
+          cpu: 10m
+          memory: 32Mi
+        limits:
+          cpu: 50m
+          memory: 64Mi
     # Talos runs no kube-proxy (Cilium KPR) and its control-plane components
     # bind localhost — those scrape targets would only produce dead alerts.
     kubeProxy:
@@ -73,6 +132,13 @@ spec:
       enabled: true
       spec:
         retentionPeriod: 14d
+        resources:
+          requests:
+            cpu: 10m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 192Mi
         storage:
           accessModes: [ReadWriteOnce]
           resources:
@@ -132,6 +198,21 @@ spec:
       enabled: true
       deploymentStrategy:
         type: Recreate # RWO PV + RollingUpdate deadlocks on a single node
+      resources:
+        requests:
+          cpu: 10m
+          memory: 416Mi
+        limits:
+          cpu: 200m
+          memory: 512Mi
+      sidecar:
+        resources:
+          requests:
+            cpu: 5m
+            memory: 96Mi
+          limits:
+            cpu: 50m
+            memory: 128Mi
       persistence:
         enabled: true
         size: 2Gi

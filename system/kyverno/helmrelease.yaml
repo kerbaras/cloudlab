@@ -23,11 +23,41 @@ spec:
         name: kyverno
         namespace: flux-system
   values:
+    # right-sized from observed usage (mean / mean+3σ) — lab budget
     admissionController:
       replicas: 1
+      container:
+        resources:
+          requests:
+            cpu: 10m
+            memory: 160Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
     backgroundController:
       replicas: 1
+      resources:
+        requests:
+          cpu: 5m
+          memory: 64Mi
+        limits:
+          cpu: 100m
+          memory: 128Mi
     cleanupController:
       replicas: 1
+      resources:
+        requests:
+          cpu: 5m
+          memory: 128Mi
+        limits:
+          cpu: 100m
+          memory: 192Mi
     reportsController:
       replicas: 1
+      resources:
+        requests:
+          cpu: 5m
+          memory: 64Mi
+        limits:
+          cpu: 100m
+          memory: 128Mi

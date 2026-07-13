@@ -58,3 +58,19 @@ spec:
     service:
       appProtocol: kubernetes.io/h2c
     replicaCount: 1
+    # right-sized from observed usage (mean / mean+3σ) — lab budget
+    resources:
+      requests:
+        cpu: 10m
+        memory: 224Mi
+      limits:
+        cpu: 500m
+        memory: 320Mi
+    login:
+      resources:
+        requests:
+          cpu: 10m
+          memory: 176Mi
+        limits:
+          cpu: 200m
+          memory: 256Mi

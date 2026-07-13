@@ -19,3 +19,14 @@ spec:
         kind: HelmRepository
         name: envoyproxy
         namespace: flux-system
+  values:
+    deployment:
+      envoyGateway:
+        # control plane for one Gateway: idles ~1m/76Mi (chart says 100m/256Mi)
+        resources:
+          requests:
+            cpu: 10m
+            memory: 96Mi
+          limits:
+            cpu: 200m
+            memory: 192Mi

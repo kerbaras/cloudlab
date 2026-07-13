@@ -8,6 +8,14 @@ metadata:
   namespace: zitadel
 spec:
   instances: 1
+  # right-sized from observed usage (~6m/130Mi) — lab budget
+  resources:
+    requests:
+      cpu: 10m
+      memory: 160Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
   bootstrap:
     initdb:
       database: zitadel

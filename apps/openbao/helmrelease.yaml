@@ -33,6 +33,14 @@ spec:
     ui:
       enabled: true
     server:
+      # right-sized from observed usage (~3m/50Mi) — lab budget
+      resources:
+        requests:
+          cpu: 5m
+          memory: 64Mi
+        limits:
+          cpu: 200m
+          memory: 128Mi
       serviceAccount:
         create: true
         name: openbao

@@ -9,7 +9,8 @@ resources:
   - storageclass.yaml
   - volumesnapshotclass.yaml
 patches:
-  # single node — one snapshot-controller is plenty
+  # single node — one snapshot-controller is plenty; sized from observed
+  # usage (idles ~0.3m/59Mi), keeping the vendored manifest pristine
   - patch: |
       apiVersion: apps/v1
       kind: Deployment
@@ -18,3 +19,14 @@ patches:
         namespace: kube-system
       spec:
         replicas: 1
+        template:
+          spec:
+            containers:
+              - name: snapshot-controller
+                resources:
+                  requests:
+                    cpu: 5m
+                    memory: 64Mi
+                  limits:
+                    cpu: 100m
+                    memory: 96Mi

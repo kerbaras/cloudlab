@@ -34,3 +34,30 @@ spec:
               ipFamilyPolicy: PreferDualStack
       envoyDeployment:
         replicas: 1
+        # lab traffic: the edge proxy idles ~5m/90Mi against a 100m/512Mi
+        # default request. Limits leave burst room for real traffic.
+        container:
+          resources:
+            requests:
+              cpu: 10m
+              memory: 96Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+        # shutdown-manager has no first-class resources knob — and its 32Mi
+        # default request sits under its observed 89Mi working set
+        patch:
+          type: StrategicMerge
+          value:
+            spec:
+              template:
+                spec:
+                  containers:
+                    - name: shutdown-manager
+                      resources:
+                        requests:
+                          cpu: 5m
+                          memory: 96Mi
+                        limits:
+                          cpu: 100m
+                          memory: 128Mi

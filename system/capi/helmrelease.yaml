@@ -31,18 +31,46 @@ spec:
         name: capi-operator
         namespace: flux-system
   values:
+    # deployment blocks pass through to the Provider CRs — controllers idle at
+    # 1-2m CPU / 21-36Mi here; upstream's 100m/128Mi requests are fleet-sized.
+    resources:
+      manager: # the operator's own deployment
+        requests:
+          cpu: 5m
+          memory: 64Mi
+        limits:
+          cpu: 100m
+          memory: 96Mi
     core:
       cluster-api:
         namespace: capi-system
         version: v1.12.9
+        deployment:
+          containers:
+            - name: manager
+              resources:
+                requests: { cpu: 5m, memory: 48Mi }
+                limits: { cpu: 100m, memory: 96Mi }
     infrastructure:
       kubevirt:
         namespace: capk-system
         version: v0.11.2
+        deployment:
+          containers:
+            - name: manager
+              resources:
+                requests: { cpu: 5m, memory: 48Mi }
+                limits: { cpu: 100m, memory: 96Mi }
     bootstrap:
       talos:
         namespace: cabpt-system
         version: v0.6.12
+        deployment:
+          containers:
+            - name: manager
+              resources:
+                requests: { cpu: 5m, memory: 32Mi }
+                limits: { cpu: 100m, memory: 64Mi }
         fetchConfig:
           # clusterctl-style provider URL — the path shape matters, spec.version picks the tag
           url: https://github.com/siderolabs/cluster-api-bootstrap-provider-talos/releases/latest/bootstrap-components.yaml
@@ -50,5 +78,11 @@ spec:
       talos:
         namespace: cacppt-system
         version: v0.5.13
+        deployment:
+          containers:
+            - name: manager
+              resources:
+                requests: { cpu: 5m, memory: 32Mi }
+                limits: { cpu: 100m, memory: 64Mi }
         fetchConfig:
           url: https://github.com/siderolabs/cluster-api-control-plane-provider-talos/releases/latest/control-plane-components.yaml

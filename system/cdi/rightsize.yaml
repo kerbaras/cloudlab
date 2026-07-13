@@ -1,0 +1,68 @@
+# The CDI CR exposes no resources knob for its managed deployments
+# (spec.infra is selectors/tolerations only), and patching the Deployments
+# directly would fight the operator's reconcile loop. So the aws-pod-identity
+# trick again: mutate at Pod admission — the one place nothing reverts.
+# Sizes from observed steady-state (mean / mean+3σ); upstream's 100m/150Mi
+# per pod assumed imports were constant, ours are rare.
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: rightsize-cdi
+  annotations:
+    pod-policies.kyverno.io/autogen-controllers: none
+spec:
+  rules:
+    - name: cdi-apiserver
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              operations: [CREATE]
+              namespaces: [cdi]
+              selector:
+                matchLabels:
+                  cdi.kubevirt.io: cdi-apiserver
+      mutate:
+        patchStrategicMerge:
+          spec:
+            containers:
+              - (name): "*"
+                resources:
+                  requests: { cpu: 5m, memory: 24Mi }
+                  limits: { cpu: 100m, memory: 64Mi }
+    - name: cdi-deployment
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              operations: [CREATE]
+              namespaces: [cdi]
+              selector:
+                matchLabels:
+                  cdi.kubevirt.io: cdi-deployment
+      mutate:
+        patchStrategicMerge:
+          spec:
+            containers:
+              - (name): "*"
+                resources:
+                  requests: { cpu: 10m, memory: 112Mi }
+                  limits: { cpu: 200m, memory: 160Mi }
+    - name: cdi-uploadproxy
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              operations: [CREATE]
+              namespaces: [cdi]
+              selector:
+                matchLabels:
+                  cdi.kubevirt.io: cdi-uploadproxy
+      mutate:
+        patchStrategicMerge:
+          spec:
+            containers:
+              - (name): "*"
+                resources:
+                  requests: { cpu: 5m, memory: 16Mi }
+                  limits: { cpu: 100m, memory: 64Mi }

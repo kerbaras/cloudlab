@@ -30,3 +30,11 @@ spec:
     # (oauth.sops.yaml) carries the credentials
     operatorConfig:
       hostname: cloudlab-k8s-operator
+      # right-sized from observed usage (mean / mean+3σ) — lab budget
+      resources:
+        requests:
+          cpu: 5m
+          memory: 96Mi
+        limits:
+          cpu: 100m
+          memory: 128Mi

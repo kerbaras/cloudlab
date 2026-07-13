@@ -18,4 +18,21 @@ spec:
       sku: cloudlab
   infra:
     replicas: 1 # virt-api/virt-controller default to 2 — one node, one replica (RAM is the scarce resource)
+  # Upstream requests assume a fleet (500/275/325Mi); observed steady-state
+  # here is 176/101/91Mi. Right-size to mean with mean+3σ limits — reclaims
+  # ~700Mi of reservations for actual workloads.
+  customizeComponents:
+    patches:
+      - resourceType: Deployment
+        resourceName: virt-api
+        type: strategic
+        patch: '{"spec":{"template":{"spec":{"containers":[{"name":"virt-api","resources":{"requests":{"cpu":"5m","memory":"192Mi"},"limits":{"cpu":"100m","memory":"256Mi"}}}]}}}}'
+      - resourceType: Deployment
+        resourceName: virt-controller
+        type: strategic
+        patch: '{"spec":{"template":{"spec":{"containers":[{"name":"virt-controller","resources":{"requests":{"cpu":"5m","memory":"112Mi"},"limits":{"cpu":"100m","memory":"192Mi"}}}]}}}}'
+      - resourceType: DaemonSet
+        resourceName: virt-handler
+        type: strategic
+        patch: '{"spec":{"template":{"spec":{"containers":[{"name":"virt-handler","resources":{"requests":{"cpu":"5m","memory":"96Mi"},"limits":{"cpu":"100m","memory":"192Mi"}}}]}}}}'
   imagePullPolicy: IfNotPresent

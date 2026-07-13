@@ -29,3 +29,11 @@ spec:
     extraArgs:
       backend: http://vlogs-server:9428
       patterns-enabled: "true"
+    # a thin translation façade idles at ~20Mi — the chart defaults dream big
+    resources:
+      requests:
+        cpu: 5m
+        memory: 24Mi
+      limits:
+        cpu: 100m
+        memory: 64Mi

@@ -34,6 +34,14 @@ spec:
       - --aws-zone-match-parent
     txtOwnerId: cloudlab-mgmt
     policy: sync
+    # right-sized from observed usage (mean / mean+3σ) — lab budget
+    resources:
+      requests:
+        cpu: 5m
+        memory: 96Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi
     serviceAccount:
       create: true
       name: external-dns

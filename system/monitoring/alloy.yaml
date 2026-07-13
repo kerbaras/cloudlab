@@ -18,7 +18,23 @@ spec:
         name: grafana
         namespace: flux-system
   values:
+    configReloader:
+      resources:
+        requests:
+          cpu: 5m
+          memory: 40Mi
+        limits:
+          cpu: 50m
+          memory: 64Mi
     alloy:
+      # right-sized from observed usage (mean / mean+3σ) — lab budget
+      resources:
+        requests:
+          cpu: 10m
+          memory: 336Mi
+        limits:
+          cpu: 200m
+          memory: 512Mi
       extraPorts:
         - name: otlp-grpc
           port: 4317

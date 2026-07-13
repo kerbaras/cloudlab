@@ -117,10 +117,11 @@ spec:
           command: [ "/usr/src/multus-cni/bin/multus-daemon" ]
           resources:
             requests:
-              cpu: "100m"
-              memory: "50Mi"
+              cpu: "10m"
+              memory: "80Mi" # thick-plugin daemon idles at ~75Mi — 50Mi was a lie
             limits:
-              memory: "256Mi"
+              cpu: "100m"
+              memory: "128Mi"
           securityContext:
             privileged: true
           terminationMessagePolicy: FallbackToLogsOnError

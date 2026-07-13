@@ -22,3 +22,27 @@ spec:
     serviceAccount:
       annotations:
         eks.amazonaws.com/role-arn: arn:aws:iam::203447569320:role/cloudlab-cert-manager
+    # right-sized from observed usage (mean / mean+3σ) — lab budget
+    resources:
+      requests:
+        cpu: 5m
+        memory: 96Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi
+    webhook:
+      resources:
+        requests:
+          cpu: 5m
+          memory: 64Mi
+        limits:
+          cpu: 100m
+          memory: 96Mi
+    cainjector:
+      resources:
+        requests:
+          cpu: 5m
+          memory: 128Mi
+        limits:
+          cpu: 100m
+          memory: 192Mi

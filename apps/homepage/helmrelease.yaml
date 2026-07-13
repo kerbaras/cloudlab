@@ -23,6 +23,15 @@ spec:
         namespace: flux-system
   values:
     enableRbac: true
+    # right-sized from observed usage (mean / mean+3σ) — the resources
+    # widget's 5s polling is most of the CPU
+    resources:
+      requests:
+        cpu: 20m
+        memory: 192Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
     serviceAccount:
       create: true
       name: homepage
