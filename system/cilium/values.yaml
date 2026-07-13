@@ -59,6 +59,13 @@ externalIPs:
 nodePort:
   enabled: true
 
+# KubeVirt (Phase 3): VM packets are forwarded through virt-launcher, never
+# socket-originated, so pod-namespace socket LB can't translate ClusterIPs
+# for them — scope it to the host namespace and the veth packet path does
+# the translation instead (the documented KubeVirt+Cilium arrangement).
+socketLB:
+  hostNamespaceOnly: true
+
 # Flow observability = the proof half of the security model (§6.4)
 hubble:
   enabled: true

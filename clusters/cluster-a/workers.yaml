@@ -3,7 +3,7 @@
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
 kind: KubevirtMachineTemplate
 metadata:
-  name: cluster-a-workers-r2 # immutable — bump the suffix to change
+  name: cluster-a-workers-r3 # immutable — bump the suffix to change
   namespace: cluster-a
 spec:
   template:
@@ -40,14 +40,16 @@ spec:
                 devices:
                   networkInterfaceMultiqueue: true
                   rng: {}
-                  # masquerade, explicitly: capk defaults to bridge binding on
-                  # the pod network, and VM frames with a foreign MAC die at
-                  # Cilium's veth — no DNS, no apid, no cluster (observed on
-                  # the serial console). Masquerade NATs everything through
-                  # the pod IP and is CNI-agnostic.
+                  # bridge, explicitly: the VM must OWN the pod IP. CACPPT dials
+                  # Machine.Status.Addresses (the pod IP) and apid's cert only
+                  # vouches for the VM's own addresses — masquerade's 10.0.2.2
+                  # can never match. Bridge on the pod network needs Cilium's
+                  # KubeVirt arrangement: cni.exclusive=false +
+                  # socketLB.hostNamespaceOnly=true (system/cilium/values.yaml),
+                  # else forwarded VM packets miss ClusterIP translation.
                   interfaces:
                     - name: default
-                      masquerade: {}
+                      bridge: {}
                   disks:
                     - name: boot
                       disk:
@@ -65,7 +67,7 @@ kind: TalosConfigTemplate
 metadata:
   # templates are immutable (webhook-enforced) — bump the suffix to change,
   # the MachineDeployment ref rolls the workers
-  name: cluster-a-workers-r2
+  name: cluster-a-workers-r3
   namespace: cluster-a
 spec:
   template:
@@ -104,10 +106,10 @@ spec:
         configRef:
           apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
           kind: TalosConfigTemplate
-          name: cluster-a-workers-r2
+          name: cluster-a-workers-r3
           namespace: cluster-a
       infrastructureRef:
         apiVersion: infrastructure.cluster.x-k8s.io/v1alpha1
         kind: KubevirtMachineTemplate
-        name: cluster-a-workers-r2
+        name: cluster-a-workers-r3
         namespace: cluster-a
