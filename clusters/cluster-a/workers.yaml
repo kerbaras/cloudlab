@@ -59,13 +59,13 @@ spec:
     spec:
       generateType: join
       talosVersion: v1.12
-      configPatches:
-        - op: replace
-          path: /machine/install
-          value:
-            disk: /dev/vda
-            image: factory.talos.dev/openstack-installer/376567988ad370138ad8b2698212367b8edcb69b5fd68c80be1f2ec7d603b4ba:v1.13.6
-            wipe: false
+      strategicPatches: # see control-plane.yaml — multi-doc config, merge patches only
+        - |
+          machine:
+            install:
+              disk: /dev/vda
+              image: factory.talos.dev/openstack-installer/376567988ad370138ad8b2698212367b8edcb69b5fd68c80be1f2ec7d603b4ba:v1.13.6
+              wipe: false
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment

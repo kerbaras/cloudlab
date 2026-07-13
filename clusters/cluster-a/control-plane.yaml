@@ -71,16 +71,18 @@ spec:
     controlplane:
       generateType: controlplane
       talosVersion: v1.12 # config contract, not runtime — v1.13.6 images accept it
-      configPatches:
-        # the public name rides SNI passthrough; the apiserver cert must vouch for it
-        - op: add
-          path: /cluster/apiServer/certSANs
-          value:
-            - cluster-a.k8s.cloudlab.kerbaras.com
-        # upgrades keep the openstack platform (kernel args live in the installer)
-        - op: replace
-          path: /machine/install
-          value:
-            disk: /dev/vda
-            image: factory.talos.dev/openstack-installer/376567988ad370138ad8b2698212367b8edcb69b5fd68c80be1f2ec7d603b4ba:v1.13.6
-            wipe: false
+      # strategic merge, not JSON6902 — v1.12-contract configs are
+      # multi-document and CABPT rejects op/path patches against them
+      strategicPatches:
+        # cert must vouch for the public SNI name; install keeps the
+        # openstack platform (kernel args live in the installer image)
+        - |
+          cluster:
+            apiServer:
+              certSANs:
+                - cluster-a.k8s.cloudlab.kerbaras.com
+          machine:
+            install:
+              disk: /dev/vda
+              image: factory.talos.dev/openstack-installer/376567988ad370138ad8b2698212367b8edcb69b5fd68c80be1f2ec7d603b4ba:v1.13.6
+              wipe: false
