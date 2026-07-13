@@ -3,6 +3,7 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - htpasswd.sops.yaml
+  - values-secret.sops.yaml
   - source.yaml
   - helmrelease.yaml
   - httproute.yaml

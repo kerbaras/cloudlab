@@ -4,3 +4,8 @@ metadata:
   name: forgejo
   labels:
     cloudlab.kerbaras.com/gateway-access: "true"
+    # the runner's dind sidecar is privileged (runner.yaml) — same PSA
+    # posture as openebs/monitoring/kubevirt
+    pod-security.kubernetes.io/enforce: privileged
+    pod-security.kubernetes.io/audit: privileged
+    pod-security.kubernetes.io/warn: privileged

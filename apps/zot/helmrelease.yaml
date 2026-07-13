@@ -28,9 +28,10 @@ spec:
         namespace: flux-system
   valuesFrom:
     # Authorization header for the http probes (base64 admin:password) —
-    # secret material, so it can't sit in plaintext values below
+    # secret material, so it can't sit in plaintext values below; resolved
+    # from flux-system, where this HelmRelease lives
     - kind: Secret
-      name: zot-htpasswd
+      name: zot-values
       valuesKey: authHeader
       targetPath: authHeader
   values:
