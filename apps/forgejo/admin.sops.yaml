@@ -1,0 +1,21 @@
+# Break-glass local admin for Forgejo (chart-managed via gitea.admin.existingSecret).
+# Day-to-day humans arrive via Zitadel OIDC once the client exists (L6 flow 2).
+apiVersion: v1
+kind: Secret
+metadata:
+    name: forgejo-admin
+    namespace: forgejo
+stringData:
+    username: ENC[AES256_GCM,data:pBstY3bcRBovdJI=,iv:Y9EWv38w06xCw03ZR/K10QPN0QRq0Qe8mj95VBq50OE=,tag:vnrVcdXMw8JoLSXbobeAqg==,type:str]
+    password: ENC[AES256_GCM,data:OZnEfGnJ/GNUm4hkl/dqc2Qbj1PUEYhrQ1Ca11/SGy4=,iv:fmcCd+BxeciKZw8z0Jl4G+h8UgihvEz9wZkTAM5euQA=,tag:HAL53iu2P1qFJSYNBCiARA==,type:str]
+    email: ENC[AES256_GCM,data:2QJWUiTl/b1C0UULIciQg4HMtg+8ylmD0gDa,iv:o4U3EpguIFsWiTgaO/E/CVwSAEGTNMlCfmC7Z1vxDu4=,tag:6OzJG7+5KKaXD5/0LWTx5w==,type:str]
+sops:
+    kms:
+        - arn: arn:aws:kms:us-east-1:203447569320:key/99cadca6-ba46-4ef0-9df2-9f2678b7962e
+          created_at: "2026-07-13T20:47:15Z"
+          enc: AQICAHghjr0dewq1sbS0xUAI2yzWINRSDNS1+gWClJ5Dzg9INgEeuA/+wx82pkVsS3K96pfBAAAAfjB8BgkqhkiG9w0BBwagbzBtAgEAMGgGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQM+/1HEdifmPUJDDFjAgEQgDuZKzo6lKsk4PWy71fIv12tHzMih8/r7XiMe/hABLGE5Q5g5uN3BypnvSAtmBRC+T8Nw8qweaygr0YRKA==
+          aws_profile: ""
+    lastmodified: "2026-07-13T20:47:16Z"
+    mac: ENC[AES256_GCM,data:rbTH/DiGgo1TDJpvmeGcGGXAT2Ew14cZiEbDWxWMsJsHW/KWI0wPJvAKdthYMQWWhEg/VLm/55kHJLbPgZv23CpulES9SEkDCd3UaZfNFnQFoByNwk84e1LakeFwBQK0JYakuh83MqGzye5iMq/2K6qS2MWsKNO7yQEB6UyMST8=,iv:n+bpg1l1aMCbJOuvVXZuOuHprX+4f726TRNuyWdFafw=,tag:I10S3fvIcBrbMiH0JTVTCg==,type:str]
+    encrypted_regex: ^(data|stringData)$
+    version: 3.11.0

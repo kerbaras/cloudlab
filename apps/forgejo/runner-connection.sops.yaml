@@ -1,0 +1,21 @@
+# Runner side of the offline-registration handshake (uuid derives from the
+# token's first 16 chars). Server side is one idempotent command — see
+# runner.yaml header.
+apiVersion: v1
+kind: Secret
+metadata:
+    name: forgejo-runner-connection
+    namespace: forgejo
+stringData:
+    uuid: ENC[AES256_GCM,data:aJFCypLthihx9Fp+riCBRXebxXzJfvWvJk6LTa2uyOcIcWqi,iv:dJWrEJZeLKMZZ/XfIbNX8nQikfhzbTtkiXeFvjwmEtM=,tag:xeMWtToDWLHzBRdl+sFtUQ==,type:str]
+    token: ENC[AES256_GCM,data:mhTEGvKe0TnN6qWg1rfA6gQyE77JOedyWX71VB14BUH7JadaAgA58Q==,iv:VjbKm+goJHuy3H7xTkqmnPRDRFnLMeBAlmG/aI0LfrY=,tag:6UFhEmpHJq31AG+UayukhA==,type:str]
+sops:
+    kms:
+        - arn: arn:aws:kms:us-east-1:203447569320:key/99cadca6-ba46-4ef0-9df2-9f2678b7962e
+          created_at: "2026-07-13T20:47:16Z"
+          enc: AQICAHghjr0dewq1sbS0xUAI2yzWINRSDNS1+gWClJ5Dzg9INgFjXWmi3WqYM9L9/feXlp9sAAAAfjB8BgkqhkiG9w0BBwagbzBtAgEAMGgGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMWb3356cvQAh/TH/KAgEQgDsZI2CUbOjR0aUTAoUXihlKTRfPDdyX/BW0CHzHqTVj9JZzHUOiVxYeoWEdYcZlCYa3EQFwrrI5BEgkjA==
+          aws_profile: ""
+    lastmodified: "2026-07-13T20:47:17Z"
+    mac: ENC[AES256_GCM,data:hH9NkZSSjcu6r7Gk5kcMotbZYQuPxdSUSHVL8Bk6A2JlOpwOSL9eNcImmfeFDFGijXsv6YzhRvsOUa6gs1SGtJUwdoQJ9Z/AnY+3dAHI+YJY9jYkyB70rMBG5Tn/YbAcVtsIjkjjsmHR8dcZFU9Hjrd1+pwovpRFauXvxEpFmDg=,iv:9TOR4LyOzzr2aX/HjvEtf8RBOhIbm9JXox+4m4gSWMk=,tag:P0ILnTG+2UmbSm87UM0+8A==,type:str]
+    encrypted_regex: ^(data|stringData)$
+    version: 3.11.0

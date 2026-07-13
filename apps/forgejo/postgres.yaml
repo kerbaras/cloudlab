@@ -1,0 +1,24 @@
+# Forgejo's database: CNPG Cluster on lvm-thin (same shape as zitadel-db).
+# CNPG auto-generates the app user secret (forgejo-db-app); the helm values
+# consume only the password key — host/db/user are deterministic.
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: forgejo-db
+  namespace: forgejo
+spec:
+  instances: 1
+  # starting point (mirrors zitadel-db); right-size from observed usage later
+  resources:
+    requests:
+      cpu: 10m
+      memory: 160Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+  bootstrap:
+    initdb:
+      database: forgejo
+      owner: forgejo
+  storage:
+    size: 10Gi

@@ -1,0 +1,73 @@
+# Forgejo: the in-lab forge (git + Actions). TLS terminates at the edge;
+# SSH is not on the public surface — the forgejo-ssh ClusterIP is reachable
+# over the tailnet like any other Service (L5), HTTPS is the primary clone
+# path. The only local account is the sops-held break-glass admin; user
+# self-registration is off. Zitadel OIDC (L6 flow 2) is a follow-up: the
+# chart's gitea.oauth list is ready for it once a client exists.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: forgejo
+  namespace: flux-system
+spec:
+  interval: 30m
+  timeout: 15m
+  targetNamespace: forgejo
+  releaseName: forgejo # avoid the <ns>-<name> prefix: services must be forgejo-http / forgejo-ssh
+  install:
+    remediation:
+      retries: 3 # first install races the CNPG cluster coming up
+  upgrade:
+    remediation:
+      retries: 3
+  chart:
+    spec:
+      chart: forgejo
+      version: 17.1.1
+      sourceRef:
+        kind: HelmRepository
+        name: forgejo
+        namespace: flux-system
+  values:
+    # repos + LFS + actions logs/artifacts all land on this PVC (lvm-thin)
+    persistence:
+      claimName: forgejo-data
+      size: 20Gi
+    # starting point; right-size from observed usage (mean / mean+3σ) later
+    resources:
+      requests:
+        cpu: 50m
+        memory: 512Mi
+      limits:
+        cpu: "1"
+        memory: 1Gi
+    gitea:
+      admin:
+        # break-glass local admin (username/password/email keys)
+        existingSecret: forgejo-admin
+      config:
+        APP_NAME: cloudlab forge
+        database:
+          DB_TYPE: postgres
+          HOST: forgejo-db-rw:5432
+          NAME: forgejo
+          USER: forgejo
+        server:
+          DOMAIN: git.cloudlab.kerbaras.com
+          ROOT_URL: https://git.cloudlab.kerbaras.com
+          SSH_DOMAIN: git.cloudlab.kerbaras.com
+        service:
+          DISABLE_REGISTRATION: true
+        session:
+          PROVIDER: db # single pod, but sessions survive restarts
+        actions:
+          ENABLED: true
+          DEFAULT_ACTIONS_URL: https://data.forgejo.org
+      # only the secret leg of the DSN rides an env var; the rest is plain
+      # config above (CNPG names are deterministic)
+      additionalConfigFromEnvs:
+        - name: FORGEJO__DATABASE__PASSWD
+          valueFrom:
+            secretKeyRef:
+              name: forgejo-db-app
+              key: password
