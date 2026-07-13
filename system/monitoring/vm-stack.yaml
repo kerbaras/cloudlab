@@ -50,18 +50,12 @@ spec:
             - targetLabel: job
               replacement: kubelet
     # A single fat node's apiserver /metrics exceeds vmagent's 16MiB default
-    # response cap, killing the whole target — raise the ceiling for this one.
-    kubeApiServer:
-      vmScrape:
-        spec:
-          endpoints:
-            - bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
-              port: https
-              scheme: https
-              maxScrapeSize: 64MB
-              tlsConfig:
-                caFile: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-                serverName: kubernetes
+    # response cap, killing the whole target — raise the ceiling. (The CRDs
+    # shipped with this operator predate per-endpoint maxScrapeSize.)
+    vmagent:
+      spec:
+        extraArgs:
+          promscrape.maxScrapeSize: "64MB"
     # Talos runs no kube-proxy (Cilium KPR) and its control-plane components
     # bind localhost — those scrape targets would only produce dead alerts.
     kubeProxy:
