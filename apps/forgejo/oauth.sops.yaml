@@ -1,0 +1,21 @@
+# Zitadel "forgejo" web app (381651531801362489): auth method Basic + PKCE
+# (forgejo always sends a code_challenge since v8). Consumed by the chart's
+# gitea.oauth existingSecret (key/secret keys).
+apiVersion: v1
+kind: Secret
+metadata:
+    name: forgejo-oauth
+    namespace: forgejo
+stringData:
+    key: ENC[AES256_GCM,data:6AJ+PkamJDPBnYwqWpf5Pajl,iv:6w2mLfuyO4NLvCZw8plieRFd69u7l5QJxtKXTGndAXM=,tag:bWXHPfLcBogA5L8jkNUCIA==,type:int]
+    secret: ENC[AES256_GCM,data:kBkJ9J0t9z+6pfDgL8c9458kj5f2yzQORbHjpndhZSSVExONLKF5YHGkaL9aVlBoWXaXmX29bpbr4+CkZF09+A==,iv:k1IJf+E328aojOoxlC2BKcPj5NOz3Lf14r+QFInNMbE=,tag:NogjENL9miSj1Rep32VsBg==,type:str]
+sops:
+    kms:
+        - arn: arn:aws:kms:us-east-1:203447569320:key/99cadca6-ba46-4ef0-9df2-9f2678b7962e
+          created_at: "2026-07-13T21:27:33Z"
+          enc: AQICAHghjr0dewq1sbS0xUAI2yzWINRSDNS1+gWClJ5Dzg9INgEii/xl61WeEi/eiw1RDnBCAAAAfjB8BgkqhkiG9w0BBwagbzBtAgEAMGgGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMda59sv7hwS8rzr4nAgEQgDuDpYWC5vf11WQX0epEVxVqU7S4eeHtbYtX4NpDe4pOi5NeGJoj5c6/0MkfdVpMSYZdijI8EEw+Nb/oMA==
+          aws_profile: ""
+    lastmodified: "2026-07-13T21:27:34Z"
+    mac: ENC[AES256_GCM,data:w+mbre5f/c944Fc1WppM5HlR89U7nepSkDVTo9CZ10J92pI5n8H0EfeAYz9mpwrEEFoP03huCJnzMnC9LFOqUcta+I+TCfxGQ6DX8TdlYMHlgOLyZiH/ItFMq4ctBXPVqrcItG5IRMYbB30mqmFDmAYWbLVz32rfU8d2Un9Vw3U=,iv:+xCrA/Wki5hOngBbE0lHYZWkfGMK8ifbsnTFjyA9I9M=,tag:E7NVTDqwzK4rWSf2rTCcUQ==,type:str]
+    encrypted_regex: ^(data|stringData)$
+    version: 3.11.0

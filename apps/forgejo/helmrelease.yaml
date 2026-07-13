@@ -57,12 +57,29 @@ spec:
           ROOT_URL: https://git.cloudlab.kerbaras.com
           SSH_DOMAIN: git.cloudlab.kerbaras.com
         service:
-          DISABLE_REGISTRATION: true
+          DISABLE_REGISTRATION: false
+          ALLOW_ONLY_EXTERNAL_REGISTRATION: true # accounts arrive via Zitadel only
+        oauth2_client:
+          ENABLE_AUTO_REGISTRATION: true
+          USERNAME: email # local part, normalized — Zitadel's preferred_username is the email
+          ACCOUNT_LINKING: auto
         session:
           PROVIDER: db # single pod, but sessions survive restarts
         actions:
           ENABLED: true
           DEFAULT_ACTIONS_URL: https://data.forgejo.org
+      # Zitadel OIDC (L6 flow 2): chart renders these as `admin auth
+      # add-oauth/update-oauth` flags. Forgejo sends PKCE on top of the
+      # Basic client secret; the groupsClaim Action maps project roles →
+      # groups, so holders of the zitadel "admin" role are forge admins.
+      oauth:
+        - name: zitadel
+          provider: openidConnect
+          existingSecret: forgejo-oauth
+          autoDiscoverUrl: https://auth.cloudlab.kerbaras.com/.well-known/openid-configuration
+          scopes: profile email
+          groupClaimName: groups
+          adminGroup: admin
       # only the secret leg of the DSN rides an env var; the rest is plain
       # config above (CNPG names are deterministic)
       additionalConfigFromEnvs:

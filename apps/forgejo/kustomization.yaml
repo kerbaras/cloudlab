@@ -3,6 +3,7 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - admin.sops.yaml
+  - oauth.sops.yaml
   - runner-connection.sops.yaml
   - postgres.yaml
   - source.yaml

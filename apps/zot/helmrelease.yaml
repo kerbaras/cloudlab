@@ -46,6 +46,9 @@ spec:
         mountPath: /secret
     mountConfig: true
     configFiles:
+      # Zitadel SSO (L6 flow 2) for the UI; docker CLI can't OIDC, so apikey
+      # lets SSO users mint keys (Profile → API Keys) for docker login. The
+      # htpasswd admin stays as the push identity for CI + break-glass.
       config.json: |-
         {
           "storage": { "rootDirectory": "/var/lib/registry", "gc": true, "dedupe": true },
@@ -53,13 +56,26 @@ spec:
             "address": "0.0.0.0",
             "port": "5000",
             "externalUrl": "https://registry.cloudlab.kerbaras.com",
-            "auth": { "htpasswd": { "path": "/secret/htpasswd" } },
+            "auth": {
+              "htpasswd": { "path": "/secret/htpasswd" },
+              "apikey": true,
+              "openid": {
+                "providers": {
+                  "oidc": {
+                    "name": "Zitadel",
+                    "issuer": "https://auth.cloudlab.kerbaras.com",
+                    "credentialsFile": "/secret/oidc-credentials.json",
+                    "scopes": ["openid", "profile", "email"]
+                  }
+                }
+              }
+            },
             "accessControl": {
               "repositories": {
                 "**": { "defaultPolicy": ["read"] }
               },
               "adminPolicy": {
-                "users": ["admin"],
+                "users": ["admin", "matias.pierobonm@gmail.com", "matip.4.9@gmail.com"],
                 "actions": ["read", "create", "update", "delete"]
               }
             }
