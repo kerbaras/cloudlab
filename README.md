@@ -1,6 +1,10 @@
 # CloudLab ☁️
 
 <p align="center">
+  <img src="docs/logo.png" alt="CloudLab — a cloud provider in a box" width="200"/>
+</p>
+
+<p align="center">
   <strong>A single Hetzner dedicated server, operated as if it were a small cloud provider</strong>
 </p>
 
