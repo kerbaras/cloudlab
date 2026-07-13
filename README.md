@@ -95,11 +95,15 @@ flux get kustomizations --watch
 | <a href="https://victoriametrics.com/"><img width="32" src="https://avatars.githubusercontent.com/u/43720803?s=64&v=4"/></a> | VictoriaMetrics | Metrics, logs, and traces at ~⅓ the RAM of the Prometheus stack |
 | <a href="https://grafana.com/"><img width="32" src="https://avatars.githubusercontent.com/u/7195757?s=64&v=4"/></a> | Grafana | Dashboards behind SSO; Alloy ships pod logs, events, and OTLP traces |
 | <a href="https://www.terraform.io/"><img width="32" src="https://avatars.githubusercontent.com/u/761456?s=64&v=4"/></a> | Terraform | Record of the AWS footprint — KMS key, IAM OIDC provider, Route53 zone |
+| <a href="https://kubevirt.io/"><img width="32" src="https://avatars.githubusercontent.com/u/18700703?s=64&v=4"/></a> | KubeVirt | EC2 at home — VMs as CRs, first-class KVM guests, no nesting |
+| <a href="https://github.com/kubevirt/containerized-data-importer"><img width="32" src="https://avatars.githubusercontent.com/u/18700703?s=64&v=4"/></a> | CDI | The AMI intake — factory images imported to lvm-thin PVCs |
+| <a href="https://github.com/k8snetworkplumbingwg/multus-cni"><img width="32" src="https://avatars.githubusercontent.com/u/51981918?s=64&v=4"/></a> | Multus | Meta-CNI — secondary interfaces for pods and VMs, Cilium stays primary |
+| <a href="https://cluster-api.sigs.k8s.io/"><img width="32" src="https://avatars.githubusercontent.com/u/36015203?s=64&v=4"/></a> | Cluster API | EKS at home — Talos clusters stamped inside VMs (capk + CABPT/CACPPT) |
+| <a href="https://www.vcluster.com/"><img width="32" src="https://avatars.githubusercontent.com/u/59871637?s=64&v=4"/></a> | vCluster | EKS-lite at ~500 MB — the lane for experiments that don't earn a VM |
 
-**On deck** (Phases 3–4): <a href="https://kubevirt.io/">KubeVirt</a> (EC2 at home — VMs as CRs),
-<a href="https://cluster-api.sigs.k8s.io/">Cluster API</a> (EKS at home — Talos clusters stamped inside VMs),
-<a href="https://www.vcluster.com/">vCluster</a> (EKS-lite at ~500 MB), and
-<a href="https://kro.run/">kro</a> (the platform API — `CloudlabCluster` in one apply).
+**On deck** (Phase 4): <a href="https://kro.run/">kro</a> (the platform API —
+`CloudlabCluster` in one apply), and VyOS-as-VM when routed tenant bridges
+become real (decision #9).
 
 ### The self-hosting backlog
 
@@ -163,11 +167,15 @@ cloudlab/
 ├── aws/                     Terraform: KMS key · IAM OIDC provider · Route53 zone
 ├── system/                  one dir = one component = one Flux Kustomization
 │   ├── flux-system/         GitOps root + the Kustomization dependency DAG
-│   ├── cilium/              bootstrap Helm values · LB-IPAM pools
+│   ├── cilium/              bootstrap Helm values · LB-IPAM pools · CCNP backstop
 │   ├── edge/                Gateway · wildcard cert · HTTP→S redirect
 │   ├── identity/            OIDC publication · AWS pod identity (IRSA-at-home)
 │   ├── monitoring/          VictoriaMetrics stack · Alloy · SSO'd UIs
 │   ├── policies/            reusable network-policy baselines + examples
+│   ├── multus/              meta-CNI — secondary interfaces for pods & VMs
+│   ├── kubevirt/            EC2 at home — virt-operator + KubeVirt CR
+│   ├── cdi/                 the AMI intake — image imports to lvm-thin PVCs
+│   ├── capi/                EKS at home — operator + kubevirt/talos providers
 │   └── ...                  cert-manager · envoy-gateway-system · external-dns
 │                            kyverno · openebs · cloudnative-pg · tailscale
 ├── apps/                    one dir per app + a ks in system/flux-system
@@ -175,6 +183,9 @@ cloudlab/
 │   ├── openbao/             secret custody
 │   ├── homepage/            the hub — routes self-register via annotations
 │   └── kite/                cluster console
+├── clusters/                workload clusters as products (L3)
+│   ├── cluster-a/           Talos-in-VM via CAPI — the first stamped cluster
+│   └── scratch/             the vCluster lane — EKS-lite at ~500 MB
 └── docs/                    the layer diagram (.excalidraw source + rendered svg)
 ```
 
@@ -187,8 +198,8 @@ in the repo in plaintext.
 
 - ✅ **Phase 1 — network baseline**: Talos + firewall + Tailscale, Cilium dual-stack, LB pools, Envoy edge, policy tiers
 - 🚧 **Phase 4 — identity & platform** (started early): Zitadel + structured authn, gateway OIDC, IRSA-at-home, OpenBao; kro still ahead
-- 📅 **Phase 2 — hardening**: Hetzner virtual MAC + Multus, Tailscale operator, VyOS-as-VM for routed tenant bridges
-- 📅 **Phase 3 — the fleet**: KubeVirt + CDI, CAPI-stamped Talos clusters on their `/64` trios, vCluster lane
+- 🚧 **Phase 2 — hardening**: Multus ✓, Tailscale operator ✓, CCNP baseline backstop ✓; Hetzner virtual MAC + macvlan and VyOS-as-VM stay parked until their triggers fire
+- 🚧 **Phase 3 — the fleet**: KubeVirt + CDI ✓, CAPI provider quartet ✓, `cluster-a` stamped with the `:6443` TLSRoute wired ✓, vCluster lane ✓; the fd10 node bridge and Flux-templated previews are what's left
 - 📅 **Phase N — box #2**: ClusterMesh, replicated storage, HA stops being theater
 
 ## 🤝 Contributing

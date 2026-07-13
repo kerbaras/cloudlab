@@ -39,9 +39,9 @@ A packet capture is self-describing.
 | `2a01:4f9:3b:fd01::/64` | mgmt | pods (GUA, policy-dark) | **Active — Phase 1** |
 | `2a01:4f9:3b:fd02::/64` | mgmt | LB pool `public-ipv6` (opt-in label) | **Active — Phase 1** |
 | `2a01:4f9:3b:fd03::/64`–`fd0f::/64` | mgmt | reserved | — |
-| `2a01:4f9:3b:fd10::/64` | cluster-a | nodes (VM bridge) | Phase 3 |
-| `2a01:4f9:3b:fd11::/64` | cluster-a | pods | Phase 3 |
-| `2a01:4f9:3b:fd12::/64` | cluster-a | LB pool | Phase 3 |
+| `2a01:4f9:3b:fd10::/64` | cluster-a | nodes (VM bridge) | Reserved — cluster-a exists (Phase 3) but its VMs ride the mgmt pod network via bridge binding (ARCHITECTURE decision #21); this /64 funds the Multus-bridge upgrade |
+| `2a01:4f9:3b:fd11::/64` | cluster-a | pods | Reserved (v4-only internally until the fd10 bridge lands) |
+| `2a01:4f9:3b:fd12::/64` | cluster-a | LB pool | Reserved |
 | `2a01:4f9:3b:fd20::/64` | cluster-b | nodes | future |
 | `2a01:4f9:3b:fd21::/64` | cluster-b | pods | future |
 | `2a01:4f9:3b:fd22::/64` | cluster-b | LB pool | future |
@@ -56,8 +56,10 @@ Service `cloudlab.kerbaras.com/public-v6: "true"` in Git.
 
 | Range | Role | Notes |
 |---|---|---|
-| `10.244.0.0/16` | mgmt pods v4 | Egress SNATs to `.251`; workload clusters reuse the same range internally (isolated by VM boundary) |
+| `10.244.0.0/16` | mgmt pods v4 | Egress SNATs to `.251`. Workload-cluster *nodes* also live here (VMs own pod IPs via bridge binding, decision #21) |
 | `10.96.0.0/12` | mgmt services v4 | The **only** range Tailscale advertises |
+| `10.243.0.0/16` | cluster-a pods v4 (internal) | Deliberately ≠ mgmt ranges: nodes dial a mgmt ClusterIP as their controlPlaneEndpoint, and a shared service range would let the workload cluster's own allocator shadow it |
+| `10.95.0.0/16` | cluster-a services v4 (internal) | Same rationale; future clusters step down (10.94/16, …) |
 | `fd63:6c6f:7564::/108` | mgmt services v6 | `63:6c6f:7564` spells "cloud"; optionally advertised to the tailnet |
 | `100.64.0.0/10` | Tailnet (CGNAT) | Appears as source identity in Talos firewall rules; never a destination we route |
 
@@ -66,7 +68,7 @@ Service `cloudlab.kerbaras.com/public-v6: "true"` in Git.
 | Name | Record | Target |
 |---|---|---|
 | `*.cloudlab.kerbaras.com` | A / AAAA | `65.21.143.224` / edge address from `fd02::/64` |
-| `<cluster>.k8s.cloudlab.kerbaras.com` | A / AAAA | Same edge addresses (SNI passthrough on :6443) |
+| `<cluster>.k8s.cloudlab.kerbaras.com` | A / AAAA | Same edge addresses (SNI passthrough on :6443) — live for `cluster-a` and `scratch`, published by external-dns from their TLSRoutes |
 | `quasar.cloudlab.kerbaras.com` | A (legacy v1) | Host access rides the tailnet (MagicDNS); this record is safe to delete after README Stage 2 |
 
 AAAA-first: every published name gets an AAAA; A records are the compatibility

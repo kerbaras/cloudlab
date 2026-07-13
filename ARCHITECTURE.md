@@ -353,8 +353,9 @@ cloudlab/
 ├── apps/                    one dir per app + one ks in system/flux-system
 │   ├── zitadel/             IdP (L6) on a CNPG database
 │   └── homepage/            the hub — HTTPRoutes self-register via annotations
-└── (planned)
-    └── clusters/            CAPI manifests per workload cluster (fdN* trios)
+└── clusters/                workload clusters as products (L3)
+    ├── cluster-a/           Talos-in-VM via CAPI — Cluster/TCP/MachineDeployment + TLSRoute
+    └── scratch/             the vCluster lane — HelmRelease + TLSRoute
 ```
 
 `system/` has since grown: `openebs` (storage, #16), `kyverno` (policy
@@ -365,6 +366,15 @@ auto-unseal via #17's pod identity — Phase 4 begins), sitting beside its
 IdP sibling `zitadel`, and `kite` (cluster console; Zitadel OAuth, config
 pinned from Git). Gateway-level OIDC (L6 flow 2) fronts the auth-less
 observability UIs via Envoy SecurityPolicy.
+
+Phases 2–3 added the fleet substrate: `multus` (meta-CNI beside Cilium,
+`cni.exclusive=false`), `kubevirt` + `cdi` (L1), and `capi` (the operator
+plus the kubevirt/talos provider quartet, #20). `clusters/` materialized
+with `cluster-a` (Talos-in-VM, #21) and `scratch` (the vCluster lane); the
+`:6443` TLSRoute passthrough carries both apiservers, and external-dns
+publishes their names. Flux-lesson worth keeping: a CR whose CRD is
+registered by a controller in the same Kustomization deadlocks the stage
+dry-run — providers ride chart values, StorageProfiles stay conventions.
 
 Note: `clusters/` here means *workload clusters as products* (L3), a
 deliberate deviation from the Flux-community convention where `clusters/`
@@ -455,6 +465,8 @@ fate with one kernel, one PSU, one NVMe pair.
 | 17 | IRSA-at-home: cluster SA issuer as public OIDC provider | Static AWS keys; IdP-in-the-middle | Published discovery at oidc.cloudlab.kerbaras.com + AWS IAM OIDC provider + Kyverno pod-identity injection = zero static AWS credentials (cert-manager, external-dns, Flux SOPS all AssumeRoleWithWebIdentity). GitHub accepts no inbound federation — a GitHub App is the fallback if the repo goes private | SPIFFE/SPIRE if identities outgrow SA tokens |
 | 18 | VictoriaMetrics + VictoriaLogs + VictoriaTraces + Alloy | kube-prometheus-stack + Loki + Tempo | ~3× lighter on a RAM-bound box; one Alloy ships pod logs, k8s events and OTLP traces; VT is Jaeger-compatible so Grafana needs no extra plugin; loki-vl-proxy bridges Logs Drilldown | Ecosystem needs force Prometheus compat beyond vmagent's |
 | 19 | Structured apiserver authn via machine.files bridge | legacy oidc-* flags; Pinniped-style proxy; Flux-managed file | Multi-issuer relying party + CEL claim validation, natively; the file must be host-side (static pods can't mount API objects, boot circularity) and *should* be — trust anchors stay in the operator plane, not mutable from in-cluster. Cost: file edits apply on reboot only | Talos v1.14 stable: fold into `KubeAuthenticationConfig` (drops the /var file + extraVolumes; edits stop costing reboots) |
+| 20 | CAPI on the v1beta1 contract: core v1.12.x + capk v0.11 + CABPT v0.6 + CACPPT v0.5 | v1beta2 (CAPI v1.13+, CABPT v0.7 alphas) | CACPPT has no v1beta2 release — the quartet's newest common contract wins; providers declared via the capi-operator chart values because CR-and-its-CRD colocation deadlocks a Flux stage dry-run | CACPPT PR #244 merges and ships |
+| 21 | cluster-a VMs: openstack factory image + bridge binding on the pod network | nocloud image; masquerade; fd10 Multus bridge | capk hardcodes cloudInitConfigDrive and Talos' nocloud only reads cidata (openstack reads config-2); CACPPT verifies apid against Machine addresses = pod IP, so the VM must *own* that IP — masquerade's 10.0.2.2 can never match. Cilium prerequisites: cni.exclusive=false, socketLB.hostNamespaceOnly=true | fd10 routed bridge (structural addressing per SUBNET-PLAN) or capk grows nocloud/cert knobs |
 
 ---
 
@@ -465,14 +477,18 @@ Tailscale, Cilium dual-stack, LB pools, Envoy edge with the three listeners,
 policy tiers audit→enforce. Exit criteria: the README verification suite
 passes from outside and inside.
 
-**Phase 2 — hardening & ergonomics.** Hetzner virtual MAC + Multus macvlan so
-`.224` bypasses the host stack entirely (structural per-IP isolation);
-Tailscale operator; Multus tenant bridges + VyOS-as-VM for routed VM networks;
-CCNP variants of the baselines.
+**Phase 2 — hardening & ergonomics (largely done).** Multus deployed (thick
+plugin, Cilium delegate, `cni.exclusive=false`); Tailscale operator running;
+clusterwide baseline CCNP backstop. Still parked behind their triggers:
+Hetzner virtual MAC + macvlan for `.224` (needs the Robot order — and the
+bundled Talos CNI plugins don't include macvlan, so a plugin install rides
+along), and VyOS-as-VM (decision #9's condition hasn't fired).
 
-**Phase 3 — the fleet.** KubeVirt + CDI in anger; CAPI + CABPT/CACPPT;
-`cluster-a` on its `fd10/fd11/fd12` trio; TLSRoute wired for real;
-Flux-templated preview clusters; vCluster lane.
+**Phase 3 — the fleet (core landed).** KubeVirt + CDI live; capi-operator +
+provider quartet (#20); `cluster-a` stamped as Talos-in-VM on the pod
+network (#21) with the `:6443` TLSRoute wired for real; `scratch` opens the
+vCluster lane. Remaining: the `fd10/fd11/fd12` trio via Multus bridges
+(structural VM addressing), Flux-templated preview clusters.
 
 **Phase 4 — identity & platform.** Zitadel + structured authn + kubelogin;
 gateway OIDC everywhere; SA-issuer federation (IRSA-style) + OpenBao/ESO;
