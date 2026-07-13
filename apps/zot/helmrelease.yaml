@@ -1,0 +1,79 @@
+# zot: the lab's OCI registry at registry.cloudlab.kerbaras.com. Private by
+# decision: htpasswd for everything — authenticated users pull, only admin
+# pushes (zot-htpasswd.sops.yaml). Probes need creds too, so authHeader rides
+# in via valuesFrom instead of a plaintext chart value. Storage is a
+# volumeClaimTemplate on lvm-thin (StatefulSet flavor of the chart).
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: zot
+  namespace: flux-system
+spec:
+  interval: 30m
+  targetNamespace: zot
+  releaseName: zot # service must be "zot"
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  chart:
+    spec:
+      chart: zot
+      version: 0.1.122
+      sourceRef:
+        kind: HelmRepository
+        name: project-zot
+        namespace: flux-system
+  valuesFrom:
+    # Authorization header for the http probes (base64 admin:password) —
+    # secret material, so it can't sit in plaintext values below
+    - kind: Secret
+      name: zot-htpasswd
+      valuesKey: authHeader
+      targetPath: authHeader
+  values:
+    service:
+      type: ClusterIP # chart default is NodePort; the edge gateway is the only door
+      port: 5000
+    persistence: true
+    pvc:
+      storage: 30Gi # CI images land here; thin LV, cheap to grow
+    externalSecrets:
+      - secretName: zot-htpasswd
+        mountPath: /secret
+    mountConfig: true
+    configFiles:
+      config.json: |-
+        {
+          "storage": { "rootDirectory": "/var/lib/registry", "gc": true, "dedupe": true },
+          "http": {
+            "address": "0.0.0.0",
+            "port": "5000",
+            "externalUrl": "https://registry.cloudlab.kerbaras.com",
+            "auth": { "htpasswd": { "path": "/secret/htpasswd" } },
+            "accessControl": {
+              "repositories": {
+                "**": { "defaultPolicy": ["read"] }
+              },
+              "adminPolicy": {
+                "users": ["admin"],
+                "actions": ["read", "create", "update", "delete"]
+              }
+            }
+          },
+          "log": { "level": "info" },
+          "extensions": {
+            "search": { "enable": true },
+            "ui": { "enable": true }
+          }
+        }
+    # starting point; right-size from observed usage later
+    resources:
+      requests:
+        cpu: 10m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
