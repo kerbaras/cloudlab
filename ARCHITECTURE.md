@@ -367,6 +367,14 @@ IdP sibling `zitadel`, and `kite` (cluster console; Zitadel OAuth, config
 pinned from Git). Gateway-level OIDC (L6 flow 2) fronts the auth-less
 observability UIs via Envoy SecurityPolicy.
 
+The self-hosted toolchain followed: `forgejo` (git forge + Actions on a
+CNPG database; the runner registers offline from a sops-shared secret and
+executes jobs in a privileged dind sidecar), `zot` (private OCI registry —
+CI images stay in-lab), `ntfy` (push notifications, deny-all with
+provisioned users), and `n8n` (workflow automation, CNPG-backed,
+encryption key pinned from sops). Forgejo→Zitadel OIDC is the pending L6
+follow-up.
+
 Phases 2–3 added the fleet substrate: `multus` (meta-CNI beside Cilium,
 `cni.exclusive=false`), `kubevirt` + `cdi` (L1), and `capi` (the operator
 plus the kubevirt/talos provider quartet, #20). `clusters/` materialized
