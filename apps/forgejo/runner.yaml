@@ -1,7 +1,8 @@
 # Forgejo Actions runner: offline (shared-secret) registration — the
-# IaC-native flow. The runner's uuid+token live in runner-connection.sops.yaml
-# and are derived from a 40-hex shared secret; the server side of the handshake
-# is one imperative command after each forgejo bootstrap (idempotent):
+# IaC-native flow. The runner's uuid+token live in bao (secret/forgejo/runner,
+# ESO-materialized) and derive from a 40-hex shared secret; the server side of
+# the handshake is one imperative command after each forgejo bootstrap
+# (idempotent):
 #
 #   kubectl -n forgejo exec deploy/forgejo -- \
 #     forgejo forgejo-cli actions register --name cloudlab-runner \
@@ -16,8 +17,8 @@ metadata:
   name: forgejo-runner-config
   namespace: forgejo
 data:
-  # the init container appends the server.connections block from the sops
-  # secret — everything reviewable stays here in git
+  # the init container appends the server.connections block from the
+  # ESO-materialized secret — everything reviewable stays here in git
   config.yml: |
     log:
       level: info

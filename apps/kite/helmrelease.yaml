@@ -47,7 +47,7 @@ spec:
           pvc:
             enabled: true # users/audit/history on lvm-thin (default SC)
             size: 1Gi
-    # secrets arrive as env vars (kite-secrets.sops.yaml) and are expanded
+    # secrets arrive as env vars (bao: secret/kite/main) and are expanded
     # into the ${...} placeholders below at startup
     extraEnvs:
       - name: JWT_SECRET
@@ -83,7 +83,7 @@ spec:
         # client_secret in the POST body and no code_verifier
         # (pkg/auth/oauth_provider.go ExchangeCodeForToken). The Zitadel app
         # must use auth method "Post" with a generated secret, held in
-        # kite-secrets.sops.yaml.
+        # bao at secret/kite/main.
         - name: zitadel
           clientId: "381530982857113850"
           clientSecret: "${OAUTH_CLIENT_SECRET}"

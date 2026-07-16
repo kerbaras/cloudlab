@@ -12,8 +12,7 @@ spec:
   dependsOn:
     - name: openebs # sqlite PVC on lvm-thin
     - name: edge # the Gateway the route attaches to
-  decryption:
-    provider: sops # KMS via kustomize-controller's web identity (no secretRef)
+    - name: external-secrets-config # secrets arrive from bao via ESO
   sourceRef:
     kind: GitRepository
     name: flux-system

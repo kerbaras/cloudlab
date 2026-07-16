@@ -331,10 +331,13 @@ namespace's Cilium policies) and maps to exactly one Flux Kustomization.
 Ordering is explicit `dependsOn` (`edge` waits on `cilium`, `cert-manager`,
 `envoy-gateway-system`), not anonymous waves. Cilium's Helm layer is the one
 bootstrap-installed piece (no CNI, no pods, no GitOps); its GitOps-owned CRs
-(LB pools) live in `system/cilium/` beside the hand-applied values. Secrets
-are SOPS-encrypted in-repo against AWS KMS (`alias/cloudlab-sops`; decision
-#15) and decrypted natively by Flux via a KMS-scoped IAM credential held
-in-cluster, until OpenBao assumes custody.
+(LB pools) live in `system/cilium/` beside the hand-applied values. Secret
+custody is split (decision #22): runtime app secrets live in OpenBao and are
+materialized by External Secrets Operator (`ExternalSecret` CRs in each app
+dir, one bao-backed `ClusterSecretStore`); SOPS-against-KMS
+(`alias/cloudlab-sops`; decision #15) remains for the bootstrap-critical
+tail — the zitadel masterkey, bao's own break-glass, the flux webhook token,
+and everything under `talos/`.
 
 ```
 cloudlab/
@@ -475,6 +478,7 @@ fate with one kernel, one PSU, one NVMe pair.
 | 19 | Structured apiserver authn via machine.files bridge | legacy oidc-* flags; Pinniped-style proxy; Flux-managed file | Multi-issuer relying party + CEL claim validation, natively; the file must be host-side (static pods can't mount API objects, boot circularity) and *should* be — trust anchors stay in the operator plane, not mutable from in-cluster. Cost: file edits apply on reboot only | Talos v1.14 stable: fold into `KubeAuthenticationConfig` (drops the /var file + extraVolumes; edits stop costing reboots) |
 | 20 | CAPI on the v1beta1 contract: core v1.12.x + capk v0.11 + CABPT v0.6 + CACPPT v0.5 | v1beta2 (CAPI v1.13+, CABPT v0.7 alphas) | CACPPT has no v1beta2 release — the quartet's newest common contract wins; providers declared via the capi-operator chart values because CR-and-its-CRD colocation deadlocks a Flux stage dry-run | CACPPT PR #244 merges and ships |
 | 21 | cluster-a VMs: openstack factory image + bridge binding on the pod network | nocloud image; masquerade; fd10 Multus bridge | capk hardcodes cloudInitConfigDrive and Talos' nocloud only reads cidata (openstack reads config-2); CACPPT verifies apid against Machine addresses = pod IP, so the VM must *own* that IP — masquerade's 10.0.2.2 can never match. Cilium prerequisites: cni.exclusive=false, socketLB.hostNamespaceOnly=true | fd10 routed bridge (structural addressing per SUBNET-PLAN) or capk grows nocloud/cert knobs |
+| 22 | Runtime secret custody in OpenBao via ESO; sops keeps the bootstrap tail | all-sops (status quo); bao agent sidecars | Decision #15's stated endgame: rotation without git churn, one custody plane, ESO logs in with projected SA tokens (kubernetes auth, audience-pinned) — zero static bao creds. Bootstrap-critical secrets (zitadel masterkey, bao break-glass, webhook token, talos) stay sops: they must survive bao being down. Durability honesty: migrated values remain recoverable from git history + KMS; values *rotated in bao* are only as durable as the raft PVC (§9) until snapshots ship off-box | raft snapshot cron to S3 lands (the §9 "backup before it matters" rule); or a bao-native GitOps operator earns the imperative policy/role setup |
 
 ---
 

@@ -1,7 +1,7 @@
 # zot: the lab's OCI registry at registry.cloudlab.kerbaras.com. Private by
 # decision: htpasswd for everything — authenticated users pull, only admin
-# pushes (zot-htpasswd.sops.yaml). Probes need creds too, so authHeader rides
-# in via valuesFrom instead of a plaintext chart value. Storage is a
+# pushes (bao: secret/zot/htpasswd). Probes need creds too, so authHeader
+# rides in via valuesFrom instead of a plaintext chart value. Storage is a
 # volumeClaimTemplate on lvm-thin (StatefulSet flavor of the chart).
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease

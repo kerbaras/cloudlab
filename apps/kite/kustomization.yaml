@@ -3,7 +3,7 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - source.yaml
-  - kite-secrets.sops.yaml
+  - externalsecrets.yaml
   - helmrelease.yaml
   - httproute.yaml
   - policies

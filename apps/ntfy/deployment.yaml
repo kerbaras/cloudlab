@@ -1,7 +1,7 @@
 # ntfy: push notifications for the lab (CI results, alerts, automations).
 # No helm chart upstream worth adopting — a single binary gets raw manifests.
 # Private instance: auth-default-access deny-all, the admin user is
-# provisioned declaratively via NTFY_AUTH_USERS (bcrypt hash in sops).
+# provisioned declaratively via NTFY_AUTH_USERS (bcrypt hash in bao).
 # cache/auth/attachments all live on one lvm-thin PVC.
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -57,7 +57,7 @@ spec:
               value: "true"
             - name: NTFY_ATTACHMENT_CACHE_DIR
               value: /var/lib/ntfy/attachments
-            # provisioned admin — bcrypt hash, so it rides the sops secret
+            # provisioned admin — bcrypt hash, so it rides the ESO secret
             - name: NTFY_AUTH_USERS
               valueFrom:
                 secretKeyRef:

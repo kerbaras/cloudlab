@@ -14,8 +14,7 @@ spec:
     - name: cloudnative-pg # Cluster CRD + operator
     - name: openebs # repo + runner-cache PVCs on lvm-thin
     - name: edge
-  decryption:
-    provider: sops # KMS via kustomize-controller's web identity (no secretRef)
+    - name: external-secrets-config # secrets arrive from bao via ESO
   sourceRef:
     kind: GitRepository
     name: flux-system

@@ -1,6 +1,6 @@
 # n8n: workflow automation at n8n.cloudlab.kerbaras.com. Single main pod
 # (no queue mode — workers/valkey stay off on a RAM-bound box); postgres via
-# CNPG; the credential-store encryption key is pinned from sops so workflows
+# CNPG; the credential-store encryption key is pinned from bao so workflows
 # survive pod and PVC churn. Owner account is created on first visit; SSO is
 # an enterprise feature, so local auth it is.
 apiVersion: helm.toolkit.fluxcd.io/v2
