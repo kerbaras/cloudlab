@@ -23,6 +23,8 @@ resources:
   - homepage-ks.yaml
   - tailscale-ks.yaml
   - openbao-ks.yaml
+  - external-secrets-ks.yaml
+  - external-secrets-config-ks.yaml
   - kite-ks.yaml
   - forgejo-ks.yaml
   - zot-ks.yaml
