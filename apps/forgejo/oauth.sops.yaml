@@ -1,21 +1,21 @@
-# Zitadel "forgejo" web app (381651531801362489): auth method Basic + PKCE
-# (forgejo always sends a code_challenge since v8). Consumed by the chart's
-# gitea.oauth existingSecret (key/secret keys).
+# Zitadel "forgejo" web app: auth method Basic + PKCE (forgejo always sends
+# a code_challenge since v8). Consumed by the chart's gitea.oauth
+# existingSecret (key/secret keys).
 apiVersion: v1
 kind: Secret
 metadata:
     name: forgejo-oauth
     namespace: forgejo
 stringData:
-    key: ENC[AES256_GCM,data:6AJ+PkamJDPBnYwqWpf5Pajl,iv:6w2mLfuyO4NLvCZw8plieRFd69u7l5QJxtKXTGndAXM=,tag:bWXHPfLcBogA5L8jkNUCIA==,type:int]
-    secret: ENC[AES256_GCM,data:kBkJ9J0t9z+6pfDgL8c9458kj5f2yzQORbHjpndhZSSVExONLKF5YHGkaL9aVlBoWXaXmX29bpbr4+CkZF09+A==,iv:k1IJf+E328aojOoxlC2BKcPj5NOz3Lf14r+QFInNMbE=,tag:NogjENL9miSj1Rep32VsBg==,type:str]
+    key: ENC[AES256_GCM,data:zCfepxjuJ/o31AbuMqkz/X0o,iv:UzPpOOJHXQrQ8obSWYCuV7zqrsnpgvI5Y3rrOlZwlKI=,tag:NUtdhlChjhMF6n9USCiYFQ==,type:str]
+    secret: ENC[AES256_GCM,data:sI8fqLzOz4VLBtxAzE4p32jQhHR/sT/mnt7W7yrtSHXyzHfJlhd8xmoyx1Bke3JNIToJqJaU1c3bDKktWj2fpw==,iv:COLyNwW2LNcAtt6x91YGkKeG0T398908huA8Giw+f48=,tag:lSaDkVL0cLpLypy8ATrGhg==,type:str]
 sops:
     kms:
         - arn: arn:aws:kms:us-east-1:203447569320:key/99cadca6-ba46-4ef0-9df2-9f2678b7962e
-          created_at: "2026-07-13T21:27:33Z"
-          enc: AQICAHghjr0dewq1sbS0xUAI2yzWINRSDNS1+gWClJ5Dzg9INgEii/xl61WeEi/eiw1RDnBCAAAAfjB8BgkqhkiG9w0BBwagbzBtAgEAMGgGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMda59sv7hwS8rzr4nAgEQgDuDpYWC5vf11WQX0epEVxVqU7S4eeHtbYtX4NpDe4pOi5NeGJoj5c6/0MkfdVpMSYZdijI8EEw+Nb/oMA==
+          created_at: "2026-07-16T04:27:31Z"
+          enc: AQICAHghjr0dewq1sbS0xUAI2yzWINRSDNS1+gWClJ5Dzg9INgGhC5YQc3QHHH3mcY2E3QnBAAAAfjB8BgkqhkiG9w0BBwagbzBtAgEAMGgGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMaZ7LMclzYRyt/z8iAgEQgDs4PlqTo2aluDeznjf7z5fIcjtfQHRGfkq7nWTIKbIk2yrPZoqGW/WJKq5DDDSWu3qOQZNGfPh7Ndti6A==
           aws_profile: ""
-    lastmodified: "2026-07-13T21:27:34Z"
-    mac: ENC[AES256_GCM,data:w+mbre5f/c944Fc1WppM5HlR89U7nepSkDVTo9CZ10J92pI5n8H0EfeAYz9mpwrEEFoP03huCJnzMnC9LFOqUcta+I+TCfxGQ6DX8TdlYMHlgOLyZiH/ItFMq4ctBXPVqrcItG5IRMYbB30mqmFDmAYWbLVz32rfU8d2Un9Vw3U=,iv:+xCrA/Wki5hOngBbE0lHYZWkfGMK8ifbsnTFjyA9I9M=,tag:E7NVTDqwzK4rWSf2rTCcUQ==,type:str]
+    lastmodified: "2026-07-16T04:27:31Z"
+    mac: ENC[AES256_GCM,data:7NyY/ij3nZyItZaNWW5m1bW3lzA0Z16MQZgFm8ep4T/m5Rd1Q1EsXh2qxgW4xXIhjBLTE5wEZM4Vd2mhTk2trPB11siwW921kM7dnZXZekctskRHUYvqITrSpG7WR2cGAqlPH/lEQTqK80gB+3xPtF9M7txTQOLtTIt78tEKloI=,iv:W0N9BUg9aKZAZOU88qZKxmDgD2k6yoAFVQ49j4xXhJ0=,tag:SRJPYCCCnmxYM20xzx+hHQ==,type:str]
     encrypted_regex: ^(data|stringData)$
     version: 3.11.0
