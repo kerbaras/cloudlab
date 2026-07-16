@@ -14,8 +14,7 @@ spec:
   dependsOn:
     - name: openebs # PVCs for vmsingle / victoria-logs / grafana
     - name: edge # grafana HTTPRoute attaches to the gateway
-  decryption:
-    provider: sops # KMS via kustomize-controller's web identity (no secretRef)
+    - name: external-secrets-config # gateway-oidc arrives from bao via ESO
   sourceRef:
     kind: GitRepository
     name: flux-system
